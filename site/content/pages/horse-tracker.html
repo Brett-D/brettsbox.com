@@ -1,0 +1,68 @@
+---
+title: Horse Tracker 9000
+slug: horse-tracker
+eyebrow: Project 04 · Coming soon
+lede: A camera on a servo-driven pan-tilt head that spots a horse, locks on and keeps horse and rider in frame, zooming in and out as they move. No radio tags, no QR codes, nothing for the rider to wear: it just watches.
+description: Horse Tracker 9000, coming soon: a pan-tilt-zoom camera mount that uses machine vision to find a chosen horse and rider and keep them in frame, with no radio tags or markers.
+image: /assets/img/horse-tracker-view.webp
+---
+{{img:horse-tracker-view.webp|Mock-up of the tracking camera's view of an arena: a horse and rider in a bright box labelled Target, Horse 1, with the rider linked to it; a second horse further away in a dashed box labelled Horse 2; a dead zone in the middle of the frame, an arrow steering the camera towards the target, a zoom gauge at 3.2 times, and buttons to tap a horse to follow.|Mock-up of what it should see: the chosen horse and rider locked on, a second horse spotted but ignored, and the camera steering to bring the target back to the centre.|horse-tracker-view.svg}}
+
+<section class="section" aria-labelledby="idea">
+<h2 id="idea">The idea</h2>
+<p>Filming a ride usually means someone standing at the rail with a phone. The cameras that follow you on their own mostly track a radio tag or beacon the rider has to wear. I want one that simply <strong>watches</strong>: set it on a tripod at the edge of the arena, tap the horse to follow, and it keeps that horse and rider in frame, zooming in for the detail and back out when they head for the far end.</p>
+</section>
+
+<section class="section" aria-labelledby="goals">
+<h2 id="goals">Design goals</h2>
+<dl class="spec-grid">
+  <div><dt>No markers</dt><dd>No radio tag, beacon, QR code or phone on the rider. The camera finds them by sight.</dd></div>
+  <div><dt>Any horse</dt><dd>Works with any horse out of the box, without training it on a particular one.</dd></div>
+  <div><dt>The right horse</dt><dd>With several horses in the arena, it stays on the one you picked, even when they cross.</dd></div>
+  <div><dt>Filmed, not twitchy</dt><dd>Slow, steady pans and zooms that keep horse and rider a steady size in the frame, rider included.</dd></div>
+</dl>
+</section>
+
+<section class="section" aria-labelledby="mount">
+<h2 id="mount">The mount</h2>
+<p>The first sketch: a pan-tilt head on an ordinary camera tripod, with the camera swinging in a U-shaped yoke.</p>
+{{img:horse-tracker-mount.webp|Concept drawing of the camera mount, side view and front view: a zoom camera held in a U-shaped yoke with a tilt servo on one arm, sitting on a base that holds the pan servo, with a vision computer bolted to the base, a battery on the tripod's centre column, and arrows showing pan, tilt and zoom.|Concept sketch of the pan-tilt-zoom head. Parts not chosen yet; not to scale.|horse-tracker-mount.svg}}
+<ol>
+  <li><strong>Zoom camera</strong> with optical zoom the computer can control, so it can go from the whole arena to one horse and rider without losing detail.</li>
+  <li><strong>Tilt servo</strong>: nods the camera up and down.</li>
+  <li><strong>Pan servo</strong>: turns the whole head left and right.</li>
+  <li><strong>Vision computer</strong>: finds the horses, picks the right one, and drives the servos and the zoom.</li>
+  <li><strong>Battery</strong>, so it can sit at the edge of the arena, away from a socket.</li>
+  <li><strong>Tripod mount</strong>: the standard screw thread every camera tripod has.</li>
+</ol>
+</section>
+
+<section class="section" aria-labelledby="tracking">
+<h2 id="tracking">How it will track</h2>
+<p>Every frame goes round the same loop:</p>
+{{flow:tracker}}
+<p>Two details make it work without markers:</p>
+<ul>
+  <li><strong>Remembering the right horse.</strong> A detector only says "horse here, horse there". To stay on <em>your</em> horse, the tracker follows each one from frame to frame and learns what the chosen one looks like: colour, markings, tack. When two horses cross, or one passes behind another, it picks the right one back up.</li>
+  <li><strong>Linking the rider.</strong> People get detected too. A person sitting on the chosen horse belongs to it, so the framing box grows to include them, while someone standing at the rail is ignored.</li>
+</ul>
+<p>If the horse disappears behind a jump, a wall or another horse, the camera holds still for a moment, then zooms out and looks for <em>that</em> horse again, rather than settling for whichever one it sees first.</p>
+</section>
+
+<section class="section" aria-labelledby="questions">
+<h2 id="questions">Open questions</h2>
+<ul>
+  <li>How fast does it need to pan to keep up with a horse cantering past close to the camera?</li>
+  <li>How well will the vision model cope with dust, a low sun and horses that look alike?</li>
+  <li>Which zoom cameras can a computer control, and how quickly do they zoom?</li>
+</ul>
+</section>
+
+<section class="section" aria-labelledby="status">
+<h2 id="status">Status</h2>
+<ul class="status-board">
+  <li><span class="pill pill--info">Concept</span><div><strong>Design sketches</strong><span>The mount and the tracking view on this page. Nothing built yet.</span></div></li>
+  <li><span class="pill pill--info">Next</span><div><strong>Choose the parts</strong><span>Servos, a zoom camera the computer can control, and a computer fast enough to run the vision model live.</span></div></li>
+  <li><span class="pill pill--info">Then</span><div><strong>Build and test</strong><span>Build the head and try it at the arena: one horse first, then several.</span></div></li>
+</ul>
+</section>

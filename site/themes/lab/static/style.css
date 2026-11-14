@@ -287,7 +287,8 @@ code, pre, kbd { font-family: var(--mono); font-size: 0.88em; }
 .post-card__arrow { font-size: 1.5rem; color: var(--dim); transition: transform 0.3s var(--ease), color 0.3s; }
 .post-card__link:hover .post-card__arrow { transform: translateX(5px); color: var(--pink); }
 
-.project-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.1rem; }
+.project-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.1rem; }
+@media (max-width: 1200px) { .project-grid { grid-template-columns: repeat(2, 1fr); } }
 .project-card {
   --accent: var(--cyan);
   position: relative; display: flex; flex-direction: column; gap: 0.9rem; min-height: 320px;
@@ -298,6 +299,7 @@ code, pre, kbd { font-family: var(--mono); font-size: 0.88em; }
 }
 .project-card--lime { --accent: var(--lime); }
 .project-card--pink { --accent: var(--pink); }
+.project-card--amber { --accent: var(--amber); }
 .project-card:hover { color: var(--text); transform: translateY(-6px) rotate(-0.4deg); border-color: var(--accent); box-shadow: 0 30px 60px -30px color-mix(in srgb, var(--accent) 70%, transparent); }
 .project-card__top { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
 .project-card__code { font: 600 0.8rem var(--mono); color: var(--accent); letter-spacing: 0.1em; }

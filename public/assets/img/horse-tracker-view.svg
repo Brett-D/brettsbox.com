@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" width="1600" height="1000">
+  <title>Horse Tracker 9000: mock-up of the tracking camera's view</title>
+  <style>
+    @font-face { font-family: "JetBrains Mono"; src: url("/assets/fonts/JetBrainsMono-Variable.woff2") format("woff2"); font-weight: 100 800; }
+    text { font-family: "JetBrains Mono", ui-monospace, monospace; }
+    .bar { font-size: 22px; font-weight: 600; letter-spacing: 0.08em; fill: #8b9bc0; }
+    .hud { font-size: 19px; font-weight: 600; letter-spacing: 0.08em; }
+  </style>
+  <defs>
+    <g id="horse">
+      <path fill="currentColor" d="M124 100 L129 131 L127 154 L132 166 L122 168 L118 157 L117 134 L111 104 Z"/>
+      <path fill="currentColor" d="M86 104 L90 122 L83 138 L84 156 L89 166 L78 168 L75 157 L72 140 L67 118 Z"/>
+      <path d="M47 62 C 34 66, 26 88, 26 112 C 26 122, 30 130, 35 135 C 37 120, 39 96, 51 74 Z"/>
+      <path d="M46 60 C 60 52, 95 56, 122 52 C 132 50, 140 40, 150 28 C 156 20, 160 14, 164 10 L 166 1 L 171 9
+               C 178 12, 186 22, 192 34 L 199 47 C 200 53, 195 57, 189 55 C 182 53, 176 50, 170 50
+               C 163 52, 158 58, 155 66 C 152 74, 151 82, 150 90 C 149 96, 146 100, 144 104
+               L 147 132 L 146 154 L 151 166 L 141 168 L 137 157 L 136 134 L 131 108
+               C 115 112, 90 112, 74 106 L 78 122 L 70 138 L 70 156 L 75 166 L 64 168 L 61 157 L 58 140 L 52 122
+               C 46 110, 40 84, 46 60 Z"/>
+    </g>
+    <g id="rider">
+      <path d="M103 47 L119 64 L113 88" fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M102 46 L105 22" fill="none" stroke-width="14" stroke-linecap="round"/>
+      <path d="M106 25 L117 37 L129 40" fill="none" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="107" cy="9" r="7.5"/>
+      <path d="M99 8 A 8.5 8.5 0 0 1 116 8 L 119.5 9 Z"/>
+    </g>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f203b"/><stop offset="1" stop-color="#2c5873"/></linearGradient>
+    <linearGradient id="sand" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#25344a"/><stop offset="1" stop-color="#463f35"/></linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffc24b" stop-opacity=".45"/><stop offset="1" stop-color="#ffc24b" stop-opacity="0"/></radialGradient>
+    <clipPath id="view"><rect x="44" y="100" width="1512" height="780" rx="10"/></clipPath>
+    <marker id="ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#ffc24b"/></marker>
+  </defs>
+
+  <rect width="1600" height="1000" fill="#070b16"/>
+  <rect x="24" y="24" width="1552" height="952" rx="24" fill="#0b1222" stroke="#22304d" stroke-width="2"/>
+
+  <!-- top bar -->
+  <circle cx="64" cy="62" r="8" fill="#ff4fa3"/>
+  <text x="84" y="70" class="bar" fill="#ff4fa3" style="fill:#ff4fa3">LIVE</text>
+  <text x="170" y="70" class="bar" style="fill:#e8eefc">HORSE TRACKER 9000</text>
+  <text x="1536" y="70" class="bar" text-anchor="end" style="fill:#b6f35a">FOLLOWING: HORSE 1</text>
+
+  <!-- ===== the scene ===== -->
+  <g clip-path="url(#view)">
+    <rect x="44" y="100" width="1512" height="780" fill="url(#sky)"/>
+    <circle cx="1250" cy="440" r="190" fill="url(#sun)"/>
+    <path d="M44 446 C 200 386, 330 406, 470 426 C 620 446, 720 376, 900 396 C 1050 411, 1150 366, 1300 401 C 1420 426, 1500 406, 1556 416 L1556 470 L44 470 Z" fill="#142640"/>
+    <rect x="44" y="452" width="1512" height="428" fill="url(#sand)"/>
+    <!-- far arena fence -->
+    <g stroke="#9fb0cf" stroke-opacity=".55" stroke-width="4">
+      <path d="M44 462 H1556 M44 484 H1556"/>
+    </g>
+    <g fill="#9fb0cf" fill-opacity=".55">
+      <rect x="96" y="446" width="9" height="52"/><rect x="246" y="446" width="9" height="52"/><rect x="396" y="446" width="9" height="52"/>
+      <rect x="546" y="446" width="9" height="52"/><rect x="696" y="446" width="9" height="52"/><rect x="846" y="446" width="9" height="52"/>
+      <rect x="996" y="446" width="9" height="52"/><rect x="1146" y="446" width="9" height="52"/><rect x="1296" y="446" width="9" height="52"/>
+      <rect x="1446" y="446" width="9" height="52"/>
+    </g>
+    <!-- arena letter board -->
+    <rect x="928" y="452" width="36" height="40" rx="3" fill="#dfe6f5" fill-opacity=".8"/>
+    <text x="946" y="481" text-anchor="middle" font-size="26" font-weight="700" fill="#142640">C</text>
+
+    <!-- horse 2, further away, facing left -->
+    <ellipse cx="1180" cy="632" rx="120" ry="9" fill="#000" fill-opacity=".3"/>
+    <use href="#horse" transform="translate(1320 418) scale(-1.25 1.25)" fill="#18233a" color="#24314d"/>
+
+    <!-- horse 1 and rider, the target -->
+    <ellipse cx="652" cy="770" rx="240" ry="16" fill="#000" fill-opacity=".35"/>
+    <use href="#horse" transform="translate(360 330) scale(2.6)" fill="#0b1120" color="#1b2640"/>
+    <g transform="translate(360 330) scale(2.6)" fill="#1c2742" stroke="#1c2742"><use href="#rider"/></g>
+    <path d="M695 434 L844 465" stroke="#5c6a88" stroke-width="2.5"/>
+  </g>
+
+  <!-- ===== tracking overlay ===== -->
+  <!-- horse 2: detected, not followed -->
+  <rect x="1062" y="412" width="236" height="226" fill="none" stroke="#2de2ff" stroke-opacity=".75" stroke-width="2.5" stroke-dasharray="10 8"/>
+  <text x="1062" y="400" class="hud" fill="#2de2ff">HORSE 2 · 0.94</text>
+
+  <!-- horse 1: the target, with its rider linked to it -->
+  <rect x="420" y="300" width="466" height="476" fill="none" stroke="#b6f35a" stroke-opacity=".4" stroke-width="2"/>
+  <g fill="none" stroke="#b6f35a" stroke-width="6" stroke-linecap="square">
+    <path d="M420 342 V300 H462"/><path d="M844 300 H886 V342"/><path d="M886 734 V776 H844"/><path d="M462 776 H420 V734"/>
+  </g>
+  <rect x="420" y="254" width="372" height="40" rx="4" fill="#b6f35a"/>
+  <text x="434" y="281" class="hud" fill="#0b1120">TARGET · HORSE 1 · 0.97</text>
+  <rect x="604" y="312" width="104" height="246" fill="none" stroke="#b6f35a" stroke-width="2" stroke-dasharray="6 6"/>
+  <text x="716" y="334" class="hud" font-size="17" fill="#b6f35a">+ RIDER</text>
+
+  <!-- frame centre, dead zone and the steering vector -->
+  <rect x="700" y="420" width="200" height="140" fill="none" stroke="#e8eefc" stroke-opacity=".5" stroke-width="2" stroke-dasharray="8 7"/>
+  <text x="708" y="584" class="hud" font-size="16" fill="#e8eefc" fill-opacity=".7">DEAD ZONE</text>
+  <g stroke="#e8eefc" stroke-width="2.5" stroke-opacity=".85"><path d="M800 476 V504 M786 490 H814"/></g>
+  <path d="M800 490 L668 534" fill="none" stroke="#ffc24b" stroke-width="4" marker-end="url(#ah)"/>
+  <circle cx="653" cy="538" r="7" fill="#ffc24b"/>
+  <text x="744" y="540" class="hud" fill="#ffc24b" font-size="18">STEER</text>
+
+  <!-- zoom gauge -->
+  <text x="1492" y="146" class="hud" text-anchor="middle" fill="#e8eefc">T</text>
+  <path d="M1492 160 V 820" stroke="#e8eefc" stroke-opacity=".5" stroke-width="3"/>
+  <g stroke="#e8eefc" stroke-opacity=".5" stroke-width="2">
+    <path d="M1482 160 H1502 M1486 292 H1498 M1486 424 H1498 M1486 556 H1498 M1486 688 H1498 M1482 820 H1502"/>
+  </g>
+  <path d="M1478 556 L1462 546 L1462 566 Z" fill="#2de2ff"/>
+  <text x="1454" y="563" class="hud" text-anchor="end" fill="#2de2ff">3.2×</text>
+  <text x="1492" y="852" class="hud" text-anchor="middle" fill="#e8eefc">W</text>
+
+  <!-- pick a horse -->
+  <text x="70" y="806" class="hud" font-size="17" fill="#e8eefc" fill-opacity=".8">TAP A HORSE TO FOLLOW</text>
+  <rect x="70" y="818" width="178" height="42" rx="21" fill="#b6f35a"/>
+  <text x="159" y="846" class="hud" text-anchor="middle" fill="#0b1120">● HORSE 1</text>
+  <rect x="262" y="818" width="160" height="42" rx="21" fill="#0b1222" fill-opacity=".7" stroke="#2de2ff" stroke-width="2"/>
+  <text x="342" y="846" class="hud" text-anchor="middle" fill="#2de2ff">HORSE 2</text>
+
+  <!-- mock-up stamp -->
+  <rect x="1180" y="118" width="268" height="38" rx="6" fill="#0b1222" fill-opacity=".6" stroke="#ff4fa3" stroke-width="2"/>
+  <text x="1314" y="144" class="hud" font-size="17" text-anchor="middle" fill="#ff4fa3">MOCK-UP · NOT LIVE</text>
+
+  <!-- bottom bar -->
+  <text x="64" y="930" class="bar" style="white-space:pre">PAN <tspan style="fill:#e8eefc">+12.4°</tspan>   TILT <tspan style="fill:#e8eefc">−3.1°</tspan>   ZOOM <tspan style="fill:#e8eefc">3.2×</tspan></text>
+  <text x="1536" y="930" class="bar" text-anchor="end" style="fill:#2de2ff">NO TAGS · NO RADIOS · NO QR CODES</text>
+</svg>

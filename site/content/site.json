@@ -73,6 +73,16 @@
       "status_kind": "info",
       "accent": "pink",
       "tags": ["Klipper", "OrcaSlicer", "Python CAD"]
+    },
+    {
+      "path": "/horse-tracker/",
+      "code": "PRJ-04",
+      "title": "Horse Tracker 9000",
+      "summary": "A servo-driven pan-tilt-zoom camera that spots a horse, locks on and keeps horse and rider in frame. No tags, no radios: it just watches.",
+      "status": "Coming soon",
+      "status_kind": "info",
+      "accent": "amber",
+      "tags": ["Machine vision", "Servos", "Zoom"]
     }
   ],
   "flows": {
@@ -105,6 +115,17 @@
         { "title": "Q17 P-channel FET", "detail": "ZXMP6A17G, gate driven by Q20" },
         { "title": "Q18 P-channel FET", "detail": "ZXMP6A17G, gate driven by Q21" },
         { "title": "NiMH battery", "detail": "14.4 V pack and the robot's loads" }
+      ]
+    },
+    "tracker": {
+      "caption": "The tracking loop, from camera frame to servo move, many times a second.",
+      "steps": [
+        { "title": "Zoom camera", "detail": "Watches the arena from a pan-tilt head on a tripod" },
+        { "title": "Find horses and riders", "detail": "A vision model spots every horse and person in the frame: any horse, no tags" },
+        { "title": "Lock on", "detail": "Follows the horse you tapped and remembers its look, so it doesn't swap when horses cross" },
+        { "title": "Frame the shot", "detail": "One box around horse and rider, with a calm dead zone in the middle" },
+        { "title": "Pan and tilt", "detail": "Servos turn smoothly to bring the box back to the centre" },
+        { "title": "Zoom", "detail": "In to fill the frame, out to find the horse again if it's lost" }
       ]
     }
   }
