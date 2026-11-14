@@ -251,7 +251,11 @@
       hud.font = `500 ${10.5 * dpr}px "JetBrains Mono", monospace`; hud.textBaseline = 'middle'; hud.globalAlpha = na;
       for (const [pos, text, dir = 'ur'] of S.notes) {
         const P = proj(pos); if (!P) continue;
-        const label = text.toUpperCase(), w = hud.measureText(label).width, sx = dir[1] === 'l' ? -1 : 1, sy = dir[0] === 'd' ? 1 : -1;
+        const label = text.toUpperCase(), w = hud.measureText(label).width;
+        let sx = dir[1] === 'l' ? -1 : 1, sy = dir[0] === 'd' ? 1 : -1;
+        if (sy < 0 && P[1] - 60 * dpr < 190 * dpr) sy = 1;                         // keep clear of the readouts
+        if (sx > 0 && P[0] + (62 * dpr + w) > W - 70 * dpr) sx = -1;              // and of the screen edges
+        else if (sx < 0 && P[0] - (62 * dpr + w) < 70 * dpr) sx = 1;
         const lx = P[0] + sx * 46 * dpr, ly = P[1] + sy * 34 * dpr, end = lx + sx * (w + 16 * dpr);
         hud.strokeStyle = `rgba(${SIG}, 0.8)`; hud.fillStyle = `rgb(${SIG})`;
         hud.beginPath(); hud.arc(P[0], P[1], 3 * dpr, 0, TAU); hud.fill();
