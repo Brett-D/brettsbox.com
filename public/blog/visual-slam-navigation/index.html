@@ -89,6 +89,8 @@
 
 <p><a href="https://introlab.github.io/rtabmap/">RTAB-Map</a> takes that motion plus the depth images and builds the map. Its party trick is <em>loop closure</em>: when the robot comes back to somewhere it has been before and recognises it, RTAB-Map corrects all the drift that built up along the way and snaps the map straight.</p>
 
+<figure class="figure " data-reveal><a class="figure__frame" href="/assets/img/roomba-early-3d-map.webp" title="Open full-size image"><img src="/assets/img/roomba-early-3d-map.webp" alt="An early 3D map on screen: a coloured point cloud of a room&#x27;s walls and furniture standing on a white floor plane, with the camera&#x27;s path drawn as green and orange lines." width="1200" height="1009" loading="lazy" decoding="async"></a><figcaption><span class="fig-no">Fig. 03</span> One of the first 3D maps: RTAB-Map's coloured point cloud of a room, built from the stereo camera's depth images. The coloured lines trace the camera's path.</figcaption></figure>
+
 <h3>4. Getting somewhere: Nav2</h3>
 
 <p><a href="https://docs.nav2.org/">Nav2</a> turns the map into <em>costmaps</em> (where it's safe to drive and where it isn't), plans a path, and follows it with the Regulated Pure Pursuit controller, which slows down for tight turns and near obstacles. A collision monitor sits at the very end of the chain and will slow or stop the robot if anything gets too close, whatever the planner wants.</p>
