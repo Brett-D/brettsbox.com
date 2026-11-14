@@ -7,18 +7,12 @@ no external CDNs, fonts or trackers.
 - `public/` is served as-is by nginx.
 - The web server pulls this repository every few minutes (`deploy/brettsbox-pull.timer`), so pushing to `main` publishes the site.
 
-## Two designs on trial
+## Design
 
-The site is currently published in two design variants with identical pages and content, so one can be picked:
-
-| URL | Design |
-|---|---|
-| [`/`](https://brettsbox.com/) | Neutral "Pick a design" chooser |
-| [`/lab/`](https://brettsbox.com/lab/) | **Lab**: dark technical lab notebook with bold type, colour and motion |
-| [`/blueprint/`](https://brettsbox.com/blueprint/) | **Blueprint**: retro terminal meets engineering drawing |
-
-Each variant is a complete, self-contained site: Home, Roomba project, Build log (with posts), Homelab,
-3D printing, About and an Atom feed (`/<variant>/feed.xml`).
+The site uses the **Lab** design: a dark technical lab notebook with bold type, colour and motion. Until
+14 November 2026 a second design, Blueprint, was on trial alongside it under `/blueprint/` (Lab was under
+`/lab/`). Lab won and moved to the root; old `/lab/...` and `/blueprint/...` URLs redirect to the same page
+at the root, and their feeds keep working. Blueprint is archived in [`archive/blueprint/`](archive/blueprint/).
 
 ## Layout
 
@@ -26,19 +20,19 @@ Each variant is a complete, self-contained site: Home, Roomba project, Build log
 site/
   build.py                 generator (Python 3 standard library only)
   content/
-    site.json              site settings, navigation, home-page copy, project cards, flow diagrams, video
+    site.json              site settings, theme, navigation, home-page copy, project cards, flow diagrams, video
     posts/NN-slug.html     build-log posts: front matter + HTML body
     pages/<slug>.html      roomba, homelab, printing, about: front matter + HTML body
-  themes/<variant>/
+  themes/lab/
     templates/             base, home, page, blog, post
     partials/              small snippets (post list item, project card, nav item, tag, pill, ...)
-    static/                style.css, app.js, favicon.svg (copied to public/<variant>/)
-  root/                    the chooser page (public/index.html) and its favicon
+    static/                style.css, app.js, favicon.svg (copied to the root of public/)
 public/
-  assets/                  shared by both variants: img/, media/ (demo video + poster), fonts/
-  lab/, blueprint/         GENERATED: do not edit by hand
-  index.html, favicon.svg  GENERATED from site/root
-  404.html                 standalone, untouched by the build
+  assets/                  committed by hand: img/, media/ (demo video + poster), fonts/
+  404.html                 committed by hand, untouched by the build
+  everything else          GENERATED: do not edit by hand (pages, feed.xml, style.css, app.js,
+                           favicon.svg, and the lab/ and blueprint/ redirects)
+archive/blueprint/         the retired Blueprint design (not built or served)
 deploy/                    nginx config, container setup and the pull timer
 ```
 
@@ -48,8 +42,9 @@ deploy/                    nginx config, container setup and the pull timer
 python site/build.py
 ```
 
-That regenerates `public/lab/`, `public/blueprint/`, `public/index.html` and `public/favicon.svg`.
-Commit both the sources and the generated output; the server only serves files.
+That clears and regenerates everything in `public/` except `assets/` and `404.html`.
+Commit both the sources and the generated output; the server only serves files. CSS and JS are linked
+with a `?v=<content hash>` so visitors get the new files straight away despite the server's week-long caching.
 
 ### Writing a post
 
@@ -71,7 +66,7 @@ Posts are numbered and ordered by `date`. Posts tagged `roomba` also appear on t
 
 ### Shortcodes
 
-Use these inside post and page bodies; each design styles them its own way.
+Use these inside post and page bodies.
 
 | Shortcode | Output |
 |---|---|
@@ -96,15 +91,15 @@ Use these inside post and page bodies; each design styles them its own way.
 ### Fonts
 
 Self-hosted variable fonts in `public/assets/fonts/`, both under the SIL Open Font License (licence texts alongside):
-[Space Grotesk](https://github.com/floriankarsten/space-grotesk) (Lab headings and body) and
-[JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) (monospace in both designs).
+[Space Grotesk](https://github.com/floriankarsten/space-grotesk) (headings and body) and
+[JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) (monospace).
 
 ### Previewing locally
 
 ```bash
 python site/build.py
 cd public && python -m http.server 8000
-# http://localhost:8000/lab/ and http://localhost:8000/blueprint/
+# http://localhost:8000/
 ```
 
 Line endings are forced to LF by `.gitattributes`, so building on Windows produces the same files as on Linux.

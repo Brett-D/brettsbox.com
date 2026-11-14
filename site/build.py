@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Static site generator for brettsbox.com (Python 3 standard library only).
 
-Content lives in site/content (shared by every design variant); each variant in
-site/themes/<name> supplies its own templates, partials and static files (CSS,
-JS, favicon). Running this script regenerates public/<variant>/ for every
-variant plus the root chooser page:
+Content lives in site/content; the theme in site/themes/<theme> (set in site.json) supplies the
+templates, partials and static files (CSS, JS, favicon). Running this script regenerates
+everything in public/ except assets/ and 404.html, which are committed by hand:
 
     python site/build.py
 """
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 import re
@@ -23,11 +23,14 @@ SITE = Path(__file__).resolve().parent
 ROOT = SITE.parent
 PUBLIC = ROOT / "public"
 CONTENT = SITE / "content"
-THEMES = SITE / "themes"
 
 CONFIG = json.loads((CONTENT / "site.json").read_text(encoding="utf-8"))
 ORIGIN = CONFIG["origin"].rstrip("/")
-VARIANTS = CONFIG["variants"]
+THEME = SITE / "themes" / CONFIG["theme"]
+# Everything else in public/ is generated and removed before each build.
+KEEP = {"assets", "404.html"}
+# Two designs were once on trial under /lab/ and /blueprint/; their old URLs redirect to the root.
+LEGACY_PREFIXES = ("lab", "blueprint")
 
 
 # --------------------------------------------------------------------------- helpers
@@ -130,11 +133,10 @@ def load_pages() -> dict[str, dict]:
 # --------------------------------------------------------------------------- shortcodes
 
 class Renderer:
-    """Expands {{base}} and {{name:arg|arg}} shortcodes in shared content for one variant."""
+    """Expands {{base}} and {{name:arg|arg}} shortcodes in content."""
 
-    def __init__(self, variant: str, posts: list[dict], partials: dict[str, str], feed: bool = False):
-        self.variant = variant
-        self.base = f"/{variant}"
+    def __init__(self, posts: list[dict], partials: dict[str, str], feed: bool = False):
+        self.base = ""
         self.posts = posts
         self.partials = partials
         self.feed = feed
@@ -253,21 +255,19 @@ def tag_list(tags: list[str], partials: dict[str, str]) -> str:
 
 # --------------------------------------------------------------------------- page assembly
 
-def load_theme(variant: str) -> tuple[dict[str, str], dict[str, str]]:
-    folder = THEMES / variant
-    templates = {p.stem: p.read_text(encoding="utf-8") for p in (folder / "templates").glob("*.html")}
-    partials = {p.stem: p.read_text(encoding="utf-8").strip() for p in (folder / "partials").glob("*.html")}
+def load_theme() -> tuple[dict[str, str], dict[str, str]]:
+    templates = {p.stem: p.read_text(encoding="utf-8") for p in (THEME / "templates").glob("*.html")}
+    partials = {p.stem: p.read_text(encoding="utf-8").strip() for p in (THEME / "partials").glob("*.html")}
     return templates, partials
 
 
-def nav_html(variant: str, current: str, partials: dict[str, str]) -> str:
+def nav_html(current: str, partials: dict[str, str]) -> str:
     return "\n".join(
         fill(
             partials["nav_item"],
             {
-                "href": f"/{variant}{item['path']}",
+                "href": item["path"],
                 "label": item["label"],
-                "cmd": item["cmd"],
                 "current": ' aria-current="page"' if current == item["key"] else "",
             },
             "nav_item",
@@ -290,23 +290,35 @@ def og_tags(title: str, description: str, url: str, image: str, kind: str) -> st
     return "\n".join(out)
 
 
-def build_variant(variant: str, posts: list[dict], pages: dict[str, dict]) -> list[str]:
-    vconf = VARIANTS[variant]
-    other = next(v for v in VARIANTS if v != variant)
-    templates, partials = load_theme(variant)
-    out_dir = PUBLIC / variant
-    if out_dir.exists():
-        shutil.rmtree(out_dir)
-    shutil.copytree(THEMES / variant / "static", out_dir)
-    renderer = Renderer(variant, posts, partials)
-    base = f"/{variant}"
-    written: list[str] = []
-    og_default = f"{ORIGIN}/assets/img/og-{variant}.png"
+def asset_version(name: str) -> str:
+    """Short content hash for ?v= on CSS/JS URLs: the server caches them for a week."""
+    return hashlib.sha256((THEME / "static" / name).read_bytes()).hexdigest()[:10]
 
-    def emit(path, nav_key, title, description, content, kind="website", image=og_default,
-             body_class="", sheet=""):
+
+def clean_public() -> None:
+    for entry in PUBLIC.iterdir():
+        if entry.name in KEEP:
+            continue
+        if entry.is_dir():
+            shutil.rmtree(entry)
+        else:
+            entry.unlink()
+
+
+def build_site(posts: list[dict], pages: dict[str, dict]) -> list[str]:
+    templates, partials = load_theme()
+    clean_public()
+    shutil.copytree(THEME / "static", PUBLIC, dirs_exist_ok=True)
+    renderer = Renderer(posts, partials)
+    base = ""
+    written: list[str] = []
+    paths: list[str] = []
+    og_default = f"{ORIGIN}/assets/img/og.png"
+    versions = {"css_version": asset_version("style.css"), "js_version": asset_version("app.js")}
+
+    def emit(path, nav_key, title, description, content, kind="website", image=og_default, body_class=""):
         full_title = title if title == CONFIG["site_name"] else f"{title} · {CONFIG['site_name']}"
-        url = f"{ORIGIN}{base}{path}"
+        url = f"{ORIGIN}{path}"
         page = fill(
             templates["base"],
             {
@@ -315,21 +327,19 @@ def build_variant(variant: str, posts: list[dict], pages: dict[str, dict]) -> li
                 "canonical": url,
                 "og": og_tags(full_title, description, url, image, kind),
                 "base": base,
-                "nav": nav_html(variant, nav_key, partials),
+                "nav": nav_html(nav_key, partials),
                 "content": content,
-                "switch_url": f"/{other}{path}",
-                "other_name": VARIANTS[other]["name"],
-                "variant_name": vconf["name"],
                 "year": date.today().year,
                 "body_class": body_class,
-                "sheet": sheet or nav_key.upper(),
                 "github": CONFIG["github"],
+                **versions,
             },
-            f"{variant}/base",
+            "base",
         )
-        target = out_dir / path.strip("/") / "index.html" if path != "/" else out_dir / "index.html"
+        target = PUBLIC / path.strip("/") / "index.html"
         write(target, page)
         written.append(str(target.relative_to(PUBLIC)))
+        paths.append(path)
 
     # Home
     project_cards = "\n".join(
@@ -370,9 +380,9 @@ def build_variant(variant: str, posts: list[dict], pages: dict[str, dict]) -> li
             "post_count": len(posts),
             "now_items": "".join(f"<li>{n}</li>" for n in home["now"]),
         },
-        f"{variant}/home",
+        "home",
     )
-    emit("/", "home", CONFIG["site_name"], CONFIG["description"], home_html, body_class="page-home", sheet="INDEX")
+    emit("/", "home", CONFIG["site_name"], CONFIG["description"], home_html, body_class="page-home")
 
     # Content pages
     for slug, page in pages.items():
@@ -386,19 +396,19 @@ def build_variant(variant: str, posts: list[dict], pages: dict[str, dict]) -> li
                 "slug": slug,
                 "base": base,
             },
-            f"{variant}/page",
+            "page",
         )
         image = f"{ORIGIN}{page['image']}" if page.get("image") else og_default
         emit(f"/{slug}/", page.get("nav", slug), page["title"], page["description"], content,
-             image=image, body_class=f"page-{slug}", sheet=page.get("sheet", ""))
+             image=image, body_class=f"page-{slug}")
 
     # Blog index
     blog_html = fill(
         templates["blog"],
         {"post_list": post_list(list(reversed(posts)), partials, base), "base": base, "post_count": len(posts)},
-        f"{variant}/blog",
+        "blog",
     )
-    emit("/blog/", "blog", "Build log", CONFIG["blog_description"], blog_html, body_class="page-blog", sheet="LOG")
+    emit("/blog/", "blog", "Build log", CONFIG["blog_description"], blog_html, body_class="page-blog")
 
     # Posts
     for i, post in enumerate(posts):
@@ -424,20 +434,46 @@ def build_variant(variant: str, posts: list[dict], pages: dict[str, dict]) -> li
                 "next": link(posts[i + 1] if i + 1 < len(posts) else None, "Next"),
                 "base": base,
             },
-            f"{variant}/post",
+            "post",
         )
         image = f"{ORIGIN}{post['image']}" if post.get("image") else og_default
         emit(f"/blog/{post['slug']}/", "blog", post["title"], post["summary"], content, kind="article",
-             image=image, body_class="page-post", sheet=f"LOG-{post['part']:02d}")
+             image=image, body_class="page-post")
 
-    write(out_dir / "feed.xml", atom_feed(variant, posts, partials))
-    written.append(f"{variant}/feed.xml")
+    feed = atom_feed(posts, partials)
+    write(PUBLIC / "feed.xml", feed)
+    written.append("feed.xml")
+    written += legacy_redirects(paths, feed)
     return written
 
 
-def atom_feed(variant: str, posts: list[dict], partials: dict[str, str]) -> str:
-    renderer = Renderer(variant, posts, partials, feed=True)
-    base = f"{ORIGIN}/{variant}"
+REDIRECT = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Moved · {site}</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="{origin}{path}">
+<meta http-equiv="refresh" content="0; url={path}">
+<script>location.replace("{path}" + location.hash);</script>
+</head><body><p>This page has moved to <a href="{path}">{origin}{path}</a>.</p></body></html>
+"""
+
+
+def legacy_redirects(paths: list[str], feed: str) -> list[str]:
+    """Old /lab/... and /blueprint/... pages forward to the same page at the root; feeds are copied
+    so existing subscriptions keep working."""
+    written = []
+    for prefix in LEGACY_PREFIXES:
+        for path in paths:
+            target = PUBLIC / prefix / path.strip("/") / "index.html"
+            write(target, REDIRECT.format(site=esc(CONFIG["site_name"]), origin=ORIGIN, path=path))
+            written.append(str(target.relative_to(PUBLIC)))
+        write(PUBLIC / prefix / "feed.xml", feed)
+        written.append(f"{prefix}/feed.xml")
+    return written
+
+
+def atom_feed(posts: list[dict], partials: dict[str, str]) -> str:
+    renderer = Renderer(posts, partials, feed=True)
+    base = ORIGIN
     entries = []
     for post in reversed(posts):
         url = f"{base}/blog/{post['slug']}/"
@@ -467,19 +503,10 @@ def atom_feed(variant: str, posts: list[dict], partials: dict[str, str]) -> str:
     )
 
 
-def build_root() -> None:
-    for name in ("index.html", "favicon.svg"):
-        shutil.copy2(SITE / "root" / name, PUBLIC / name)
-
-
 def main() -> int:
-    posts = load_posts()
-    pages = load_pages()
-    written: list[str] = []
-    for variant in VARIANTS:
-        written += build_variant(variant, posts, pages)
-    build_root()
-    print(f"Built {len(written)} files for {', '.join(VARIANTS)} + root chooser.")
+    written = build_site(load_posts(), load_pages())
+    print(f"Built {len(written)} files with the {CONFIG['theme']} theme "
+          f"(including redirects from /{'/, /'.join(LEGACY_PREFIXES)}/).")
     return 0
 
 

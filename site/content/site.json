@@ -5,17 +5,14 @@
   "github": "https://github.com/Brett-D",
   "description": "Brett's Box is a maker's lab notebook: an old Roomba turned into a mapping robot, a self-hosted homelab, and a 3D printer that keeps all of it held together.",
   "blog_description": "Build notes from the bench: what I tried, what broke, what I measured and what finally worked.",
-  "variants": {
-    "lab": { "name": "Lab" },
-    "blueprint": { "name": "Blueprint" }
-  },
+  "theme": "lab",
   "nav": [
-    { "key": "home", "path": "/", "label": "Home", "cmd": "~" },
-    { "key": "roomba", "path": "/roomba/", "label": "Roomba", "cmd": "roomba" },
-    { "key": "blog", "path": "/blog/", "label": "Build log", "cmd": "log" },
-    { "key": "homelab", "path": "/homelab/", "label": "Homelab", "cmd": "homelab" },
-    { "key": "printing", "path": "/printing/", "label": "3D printing", "cmd": "printing" },
-    { "key": "about", "path": "/about/", "label": "About", "cmd": "about" }
+    { "key": "home", "path": "/", "label": "Home" },
+    { "key": "roomba", "path": "/roomba/", "label": "Roomba" },
+    { "key": "blog", "path": "/blog/", "label": "Build log" },
+    { "key": "homelab", "path": "/homelab/", "label": "Homelab" },
+    { "key": "printing", "path": "/printing/", "label": "3D printing" },
+    { "key": "about", "path": "/about/", "label": "About" }
   ],
   "videos": {
     "vslam": {
