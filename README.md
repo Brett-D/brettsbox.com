@@ -9,10 +9,17 @@ no external CDNs, fonts or trackers.
 
 ## Design
 
-The site uses the **Lab** design: a dark technical lab notebook with bold type, colour and motion. Until
-14 November 2026 a second design, Blueprint, was on trial alongside it under `/blueprint/` (Lab was under
-`/lab/`). Lab won and moved to the root; old `/lab/...` and `/blueprint/...` URLs redirect to the same page
-at the root, and their feeds keep working. Blueprint is archived in [`archive/blueprint/`](archive/blueprint/).
+The site uses the **Graphite** design (`site/themes/graphite/`): cinematic and mostly monochrome, with one ice-blue
+signal colour. Every page opens on a framed, full-screen hero with a live 3D point cloud drawn on a canvas: the house
+scan with the robot's route (`house`), the Roomba (`robot`), the homelab network (`network`), the 3D printer
+(`printer`) or a horse and rider under a target lock (`horse`). Pages and posts choose theirs with a `scene:` line in
+their front matter (the default is `house`), and the home page cycles through all five. The heroes pause when off
+screen, and visitors who prefer reduced motion get a still frame.
+
+Earlier designs are archived, not served: **Lab** (the site's design until 14 November 2026) in
+[`archive/lab/`](archive/lab/), tagged `lab-design`, and **Blueprint** (on trial next to Lab at launch) in
+[`archive/blueprint/`](archive/blueprint/), tagged `blueprint-design`. Their old `/lab/...` and `/blueprint/...`
+URLs redirect to the same page at the root, and their feeds keep working.
 
 ## Layout
 
@@ -22,17 +29,17 @@ site/
   content/
     site.json              site settings, theme, navigation, home-page copy, project cards, flow diagrams, video
     posts/NN-slug.html     build-log posts: front matter + HTML body
-    pages/<slug>.html      roomba, homelab, printing, about: front matter + HTML body
-  themes/lab/
+    pages/<slug>.html      roomba, homelab, printing, horse-tracker, about: front matter + HTML body
+  themes/graphite/
     templates/             base, home, page, blog, post
     partials/              small snippets (post list item, project card, nav item, tag, pill, ...)
-    static/                style.css, app.js, favicon.svg (copied to the root of public/)
+    static/                style.css, app.js (point-cloud heroes), favicon.svg (copied to the root of public/)
 public/
   assets/                  committed by hand: img/, media/ (demo video + poster), fonts/
   404.html                 committed by hand, untouched by the build
   everything else          GENERATED: do not edit by hand (pages, feed.xml, style.css, app.js,
                            favicon.svg, and the lab/ and blueprint/ redirects)
-archive/blueprint/         the retired Blueprint design (not built or served)
+archive/lab/, blueprint/   retired designs (not built or served)
 deploy/                    nginx config, container setup and the pull timer
 ```
 
@@ -46,16 +53,13 @@ That clears and regenerates everything in `public/` except `assets/` and `404.ht
 Commit both the sources and the generated output; the server only serves files. CSS and JS are linked
 with a `?v=<content hash>` so visitors get the new files straight away despite the server's week-long caching.
 
-To try another theme without touching `public/`, build it into a scratch folder outside the repository and serve that:
+To try a theme without touching `public/` (for example one copied back from `archive/`), build it into a scratch
+folder outside the repository and serve that:
 
 ```bash
-python site/build.py --theme graphite --out ../preview
+python site/build.py --theme lab --out ../preview
 cd ../preview && python -m http.server 8000
 ```
-
-The **Graphite** theme (`site/themes/graphite/`) is a cinematic alternative: every page opens on a framed, full-screen
-3D point cloud. Pages and posts choose it with a `scene:` line in their front matter (`house`, `robot`, `network`,
-`printer` or `horse`; the default is `house`), and the home page cycles through all five.
 
 ### Writing a post
 
@@ -65,6 +69,7 @@ Create `site/content/posts/07-my-slug.html`:
 ---
 title: My new post
 slug: my-new-post
+scene: robot
 date: 2026-11-20
 tags: roomba, hardware
 summary: One or two sentences for the post list, meta description and feed.
@@ -73,7 +78,8 @@ image: /assets/img/some-image.webp
 <p>Body in plain HTML. Links inside the site use {{base}}, e.g. <a href="{{base}}/roomba/">the robot</a>.</p>
 ```
 
-Posts are numbered and ordered by `date`. Posts tagged `roomba` also appear on the Roomba project page.
+Posts are numbered and ordered by `date`. Posts tagged `roomba` also appear on the Roomba project page. `scene` picks
+the hero's point cloud (`house`, `robot`, `network`, `printer` or `horse`); leave it out for `house`.
 
 ### Shortcodes
 
@@ -102,8 +108,8 @@ Use these inside post and page bodies.
 ### Fonts
 
 Self-hosted variable fonts in `public/assets/fonts/`, both under the SIL Open Font License (licence texts alongside):
-[Space Grotesk](https://github.com/floriankarsten/space-grotesk) (headings and body) and
-[JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) (monospace).
+[Inter](https://github.com/rsms/inter) (headings and body; subset to Latin with `fontTools`) and
+[JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) (telemetry labels and code).
 
 ### Previewing locally
 

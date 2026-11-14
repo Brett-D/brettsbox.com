@@ -7,9 +7,9 @@ everything in public/ except assets/ and 404.html, which are committed by hand:
 
     python site/build.py
 
-To preview another theme without touching public/, build it into a scratch folder and serve that:
+To preview a theme without touching public/ (e.g. one copied back from archive/), build it into a scratch folder:
 
-    python site/build.py --theme graphite --out ../preview
+    python site/build.py --theme lab --out ../preview
 """
 from __future__ import annotations
 
