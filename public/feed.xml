@@ -11,11 +11,11 @@
 &lt;table&gt;
   &lt;thead&gt;&lt;tr&gt;&lt;th scope=&quot;col&quot;&gt;Test&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;Basalt (CPU)&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;cuVSLAM (GPU)&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;Better&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
   &lt;tbody&gt;
-    &lt;tr&gt;&lt;td&gt;Parked for 60 s: how far it thinks it moved&lt;/td&gt;&lt;td&gt;0.9 cm&lt;/td&gt;&lt;td&gt;&lt;strong&gt;0.3 cm&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;GPU&lt;/td&gt;&lt;/tr&gt;
-    &lt;tr&gt;&lt;td&gt;Replayed walk: jumps of more than 0.5 m&lt;/td&gt;&lt;td&gt;&lt;strong&gt;None&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;16&lt;/td&gt;&lt;td&gt;CPU&lt;/td&gt;&lt;/tr&gt;
-    &lt;tr&gt;&lt;td&gt;Replayed walk: height drift&lt;/td&gt;&lt;td&gt;&lt;strong&gt;10× less&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;10× more&lt;/td&gt;&lt;td&gt;CPU&lt;/td&gt;&lt;/tr&gt;
-    &lt;tr&gt;&lt;td&gt;Loop-closure check the map can afford&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Strict: 25 matching features&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Lenient: 15&lt;/td&gt;&lt;td&gt;CPU&lt;/td&gt;&lt;/tr&gt;
-    &lt;tr&gt;&lt;td&gt;Processor load&lt;/td&gt;&lt;td&gt;Busy CPU&lt;/td&gt;&lt;td&gt;Mostly GPU&lt;/td&gt;&lt;td&gt;Measuring in round two&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Parked 60 s: apparent drift&lt;/td&gt;&lt;td&gt;0.9 cm&lt;/td&gt;&lt;td&gt;&lt;strong&gt;0.3 cm&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;GPU&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Walk: jumps over 0.5 m&lt;/td&gt;&lt;td&gt;&lt;strong&gt;None&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;16&lt;/td&gt;&lt;td&gt;CPU&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Walk: height drift&lt;/td&gt;&lt;td&gt;&lt;strong&gt;10× less&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;10× more&lt;/td&gt;&lt;td&gt;CPU&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Loop-closure check it allows&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Strict (25)&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Lenient (15)&lt;/td&gt;&lt;td&gt;CPU&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Processor load&lt;/td&gt;&lt;td&gt;Busy CPU&lt;/td&gt;&lt;td&gt;Mostly GPU&lt;/td&gt;&lt;td&gt;Round two&lt;/td&gt;&lt;/tr&gt;
   &lt;/tbody&gt;
 &lt;/table&gt;
 &lt;/div&gt;
