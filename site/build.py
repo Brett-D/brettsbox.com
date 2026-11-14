@@ -6,9 +6,14 @@ templates, partials and static files (CSS, JS, favicon). Running this script reg
 everything in public/ except assets/ and 404.html, which are committed by hand:
 
     python site/build.py
+
+To preview another theme without touching public/, build it into a scratch folder and serve that:
+
+    python site/build.py --theme graphite --out ../preview
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import html
 import json
@@ -394,6 +399,7 @@ def build_site(posts: list[dict], pages: dict[str, dict]) -> list[str]:
                 "lede": page["lede"],
                 "body": renderer.render(page["body"]),
                 "slug": slug,
+                "scene": page.get("scene", ""),
                 "base": base,
             },
             "page",
@@ -432,6 +438,7 @@ def build_site(posts: list[dict], pages: dict[str, dict]) -> list[str]:
                 "body": renderer.render(post["body"]),
                 "prev": link(posts[i - 1] if i > 0 else None, "Previous"),
                 "next": link(posts[i + 1] if i + 1 < len(posts) else None, "Next"),
+                "scene": post.get("scene", ""),
                 "base": base,
             },
             "post",
@@ -503,12 +510,30 @@ def atom_feed(posts: list[dict], partials: dict[str, str]) -> str:
     )
 
 
-def main() -> int:
+def main(argv: list[str]) -> int:
+    global THEME, PUBLIC
+    parser = argparse.ArgumentParser(description="Build brettsbox.com into public/.")
+    parser.add_argument("--theme", help="build with this theme from site/themes instead of the one in site.json")
+    parser.add_argument("--out", help="build into this scratch folder instead of public/ (for previews); "
+                                      "it is cleared except for assets/ and 404.html, which are copied from public/")
+    args = parser.parse_args(argv)
+    theme = args.theme or CONFIG["theme"]
+    THEME = SITE / "themes" / theme
+    if not THEME.is_dir():
+        parser.error(f"no theme folder {THEME}")
+    if args.out:
+        out = Path(args.out).resolve()
+        if out == PUBLIC or out in ROOT.parents or out == ROOT:
+            parser.error(f"refusing to use {out} as a scratch folder")
+        out.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(PUBLIC / "assets", out / "assets", dirs_exist_ok=True)
+        shutil.copy2(PUBLIC / "404.html", out / "404.html")
+        PUBLIC = out
     written = build_site(load_posts(), load_pages())
-    print(f"Built {len(written)} files with the {CONFIG['theme']} theme "
+    print(f"Built {len(written)} files with the {theme} theme into {PUBLIC} "
           f"(including redirects from /{'/, /'.join(LEGACY_PREFIXES)}/).")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

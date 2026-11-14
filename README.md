@@ -46,6 +46,17 @@ That clears and regenerates everything in `public/` except `assets/` and `404.ht
 Commit both the sources and the generated output; the server only serves files. CSS and JS are linked
 with a `?v=<content hash>` so visitors get the new files straight away despite the server's week-long caching.
 
+To try another theme without touching `public/`, build it into a scratch folder outside the repository and serve that:
+
+```bash
+python site/build.py --theme graphite --out ../preview
+cd ../preview && python -m http.server 8000
+```
+
+The **Graphite** theme (`site/themes/graphite/`) is a cinematic alternative: every page opens on a framed, full-screen
+3D point cloud. Pages and posts choose it with a `scene:` line in their front matter (`house`, `robot`, `network`,
+`printer` or `horse`; the default is `house`), and the home page cycles through all five.
+
 ### Writing a post
 
 Create `site/content/posts/07-my-slug.html`:
