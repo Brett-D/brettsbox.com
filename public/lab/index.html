@@ -122,7 +122,7 @@
   </div>
   <div class="wrap">
     <ul class="ticker" aria-label="Project vitals">
-      <li><span class="ticker__num" data-count="6">6</span><span class="ticker__label">build-log posts so far</span></li>
+      <li><span class="ticker__num" data-count="7">7</span><span class="ticker__label">build-log posts so far</span></li>
       <li><span class="ticker__num">2007</span><span class="ticker__label">year the Roomba was new</span></li>
       <li><span class="ticker__num">0.3<small>cm</small></span><span class="ticker__label">parked drift in 60 s on the GPU</span></li>
       <li><span class="ticker__num">3</span><span class="ticker__label">sensors fused for its position</span></li>
@@ -145,7 +145,7 @@
       <ul class="pills" aria-label="Current status"><li class="pill pill--ok">Autonomous mapping</li><li class="pill pill--ok">GPU pipeline (cuVSLAM)</li><li class="pill pill--ok">Ridgid 18 V power</li><li class="pill pill--warn">Charging error 3</li><li class="pill pill--info">CPU vs GPU map comparison</li></ul>
       <p class="feature__links">
         <a class="btn btn--primary" href="/lab/roomba/">Project page <span aria-hidden="true">→</span></a>
-        <a class="link-arrow" href="/lab/blog/gpu-cuvslam-nvblox/">Latest: Moving the brains to the GPU: cuVSLAM, nvblox and sensor fusion</a>
+        <a class="link-arrow" href="/lab/blog/basalt-vs-cuvslam/">Latest: Basalt vs cuVSLAM, round one: CPU or GPU?</a>
       </p>
     </div>
   </div>
@@ -156,9 +156,20 @@
     <div class="block__head" data-reveal>
       <p class="kicker">Build log</p>
       <h2 class="block__title" id="latest-title">Fresh off the bench</h2>
-      <a class="link-arrow" href="/lab/blog/">All 6 posts</a>
+      <a class="link-arrow" href="/lab/blog/">All 7 posts</a>
     </div>
     <ol class="post-list"><li class="post-card" data-reveal>
+  <a class="post-card__link" href="/lab/blog/basalt-vs-cuvslam/">
+    <span class="post-card__part">#07</span>
+    <span class="post-card__body">
+      <span class="post-card__meta"><time datetime="2026-11-14">14 November 2026</time> · 4 min</span>
+      <span class="post-card__title">Basalt vs cuVSLAM, round one: CPU or GPU?</span>
+      <span class="post-card__summary">The robot can work out how it's moving with Basalt on the CPU or NVIDIA cuVSLAM on the GPU. The GPU holds still better; Basalt stays on track better once it moves. Here's the scorecard so far.</span>
+    </span>
+    <span class="post-card__arrow" aria-hidden="true">→</span>
+  </a>
+</li>
+<li class="post-card" data-reveal>
   <a class="post-card__link" href="/lab/blog/gpu-cuvslam-nvblox/">
     <span class="post-card__part">#06</span>
     <span class="post-card__body">
@@ -176,17 +187,6 @@
       <span class="post-card__meta"><time datetime="2026-11-13">13 November 2026</time> · 3 min</span>
       <span class="post-card__title">Powering it with a Ridgid 18 V tool battery</span>
       <span class="post-card__summary">With charging out of action, the robot now runs on a Ridgid power-tool battery through a fuse and a 15 V regulator. Plus: why the Roomba's fuel gauge started lying, and the voltage monitor that will replace it.</span>
-    </span>
-    <span class="post-card__arrow" aria-hidden="true">→</span>
-  </a>
-</li>
-<li class="post-card" data-reveal>
-  <a class="post-card__link" href="/lab/blog/charging-error-3/">
-    <span class="post-card__part">#04</span>
-    <span class="post-card__body">
-      <span class="post-card__meta"><time datetime="2026-11-11">11 November 2026</time> · 3 min</span>
-      <span class="post-card__title">Chasing “Charging Error 3”</span>
-      <span class="post-card__summary">The Roomba refused to charge. A service manual, a reconstructed schematic, a multimeter and two spare chargers later, the fault is cornered but not yet caught.</span>
     </span>
     <span class="post-card__arrow" aria-hidden="true">→</span>
   </a>

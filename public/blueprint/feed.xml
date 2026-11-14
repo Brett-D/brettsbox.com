@@ -1,6 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Brett&#x27;s Box build log</title><subtitle>Build notes from the bench: what I tried, what broke, what I measured and what finally worked.</subtitle><link href="https://brettsbox.com/blueprint/feed.xml" rel="self"/><link href="https://brettsbox.com/blueprint/"/><id>https://brettsbox.com/blueprint/</id><updated>2026-11-14T00:00:00+00:00</updated><author><name>Brett</name></author>
+<entry><title>Basalt vs cuVSLAM, round one: CPU or GPU?</title><link href="https://brettsbox.com/blueprint/blog/basalt-vs-cuvslam/"/><id>https://brettsbox.com/blueprint/blog/basalt-vs-cuvslam/</id><published>2026-11-14T00:00:00+00:00</published><updated>2026-11-14T00:00:00+00:00</updated><summary>The robot can work out how it&#x27;s moving with Basalt on the CPU or NVIDIA cuVSLAM on the GPU. The GPU holds still better; Basalt stays on track better once it moves. Here&#x27;s the scorecard so far.</summary><content type="html">&lt;p&gt;The robot now has two ways to work out how it&#x27;s moving. &lt;a href=&quot;https://brettsbox.com/blueprint/blog/visual-slam-navigation/&quot;&gt;Basalt&lt;/a&gt; runs on the Jetson&#x27;s CPU and &lt;a href=&quot;https://brettsbox.com/blueprint/blog/gpu-cuvslam-nvblox/&quot;&gt;NVIDIA cuVSLAM&lt;/a&gt; runs on its GPU. Both watch the same stereo camera and IMU, and one launch argument picks which one is in charge. That makes for a fair fight: I can record a run once and replay exactly the same camera frames through each.&lt;/p&gt;
+
+&lt;p&gt;The side-by-side maps are still to come, but the early numbers already tell an interesting story: the GPU is &lt;em&gt;not&lt;/em&gt; simply better.&lt;/p&gt;
+
+&lt;h2&gt;The scorecard so far&lt;/h2&gt;
+
+&lt;div class=&quot;table-wrap&quot;&gt;
+&lt;table&gt;
+  &lt;thead&gt;&lt;tr&gt;&lt;th scope=&quot;col&quot;&gt;Test&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;Basalt (CPU)&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;cuVSLAM (GPU)&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;Better&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;&lt;td&gt;Parked for 60 s: how far it thinks it moved&lt;/td&gt;&lt;td&gt;0.9 cm&lt;/td&gt;&lt;td&gt;&lt;strong&gt;0.3 cm&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;GPU&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Replayed walk: jumps of more than 0.5 m&lt;/td&gt;&lt;td&gt;&lt;strong&gt;None&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;16&lt;/td&gt;&lt;td&gt;CPU&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Replayed walk: height drift&lt;/td&gt;&lt;td&gt;&lt;strong&gt;10× less&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;10× more&lt;/td&gt;&lt;td&gt;CPU&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Loop-closure check the map can afford&lt;/td&gt;&lt;td&gt;&lt;strong&gt;Strict: 25 matching features&lt;/strong&gt;&lt;/td&gt;&lt;td&gt;Lenient: 15&lt;/td&gt;&lt;td&gt;CPU&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Processor load&lt;/td&gt;&lt;td&gt;Busy CPU&lt;/td&gt;&lt;td&gt;Mostly GPU&lt;/td&gt;&lt;td&gt;Measuring in round two&lt;/td&gt;&lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+
+&lt;h2&gt;Standing still: the GPU wins&lt;/h2&gt;
+
+&lt;p&gt;The simplest honest test is to park the robot and ask it how far it has moved. The right answer is zero. Over a minute, the CPU pipeline thought the robot had crept 0.9 cm and the GPU pipeline 0.3 cm. Fuse the calibrated wheels into the GPU pipeline&#x27;s filter and it drops to 0.07 cm, as I found in &lt;a href=&quot;https://brettsbox.com/blueprint/blog/gpu-cuvslam-nvblox/&quot;&gt;the last post&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2&gt;On the move: Basalt wins&lt;/h2&gt;
+
+&lt;p&gt;Parking is the easy case. For the hard one, I carried the camera around the house, recorded everything it saw, and replayed the recording through both.&lt;/p&gt;
+
+&lt;p&gt;A &lt;em&gt;jump&lt;/em&gt; is when the odometry suddenly decides the camera has teleported more than half a metre. The watchdog catches those so they never reach the map, but each one is a moment when the robot doesn&#x27;t really know where it is. Basalt had none. cuVSLAM had 16, and its idea of the camera&#x27;s height drifted about ten times as far as Basalt&#x27;s. On the robot, cuVSLAM is told to stay in the floor plane, so height drift matters less there, but it&#x27;s a good sign of how well each one is really tracking.&lt;/p&gt;
+
+&lt;h3&gt;It started at 544&lt;/h3&gt;
+
+&lt;p&gt;The first replay through cuVSLAM was a disaster: 544 jumps and 260 km of imagined travel in four minutes. Its default IMU settings are tuned for Intel RealSense cameras and trusted this camera&#x27;s IMU far too much, so ordinary sensor noise looked like real motion. Telling it the IMU is ten times noisier brought that down to 16 jumps, and the number of times the watchdog caught vision disagreeing with the gyro fell from 157 to 31.&lt;/p&gt;
+
+&lt;h2&gt;Why the map cares&lt;/h2&gt;
+
+&lt;p&gt;Drift is what loop closure has to clean up. When RTAB-Map recognises a place it has seen before, it checks the match by counting the features both views share, then pulls the map straight.&lt;/p&gt;
+
+&lt;p&gt;With cuVSLAM, the corrections were big enough that I had to loosen that check to 15 matching features and tell RTAB-Map the odometry was less certain. Otherwise it rejected real loop closures, including one that needed a 7° correction. With Basalt, that loose check became a liability: similar-looking doors matched the wrong place and warped the map. Raising it to 25 gave a clean map on the same walk. Better odometry lets the map be pickier, and being picky is what keeps it straight.&lt;/p&gt;
+
+&lt;aside class=&quot;callout&quot;&gt;
+  &lt;p class=&quot;callout__title&quot;&gt;So which one drives?&lt;/p&gt;
+  &lt;p&gt;For now, Basalt. Staying on track while moving matters more than holding still, so the CPU pipeline is still the robot&#x27;s default. The GPU pipeline is staying too: it takes the load off the CPU, and with the wheels fused in, it&#x27;s the steadiest when parked. One launch argument switches between them.&lt;/p&gt;
+&lt;/aside&gt;
+
+&lt;h2&gt;Round two: maps&lt;/h2&gt;
+
+&lt;p&gt;Numbers are nice; maps you can overlay are better. The next test replays one recorded drive through both pipelines, each building its own map from scratch, with the robot&#x27;s drivers switched off so nothing can move. It counts tracking losses and loop closures, measures the map&#x27;s area, and checks how far from the start each one thinks the robot finished. If the drive ends where it began, the right answer is zero. It also records how hard each one works the CPU and GPU.&lt;/p&gt;
+
+
+</content></entry>
 <entry><title>Moving the brains to the GPU: cuVSLAM, nvblox and sensor fusion</title><link href="https://brettsbox.com/blueprint/blog/gpu-cuvslam-nvblox/"/><id>https://brettsbox.com/blueprint/blog/gpu-cuvslam-nvblox/</id><published>2026-11-14T00:00:00+00:00</published><updated>2026-11-14T00:00:00+00:00</updated><summary>NVIDIA cuVSLAM for visual odometry, an EKF that fuses calibrated wheels, gyro and vision, and nvblox for obstacle mapping, all on the Jetson&#x27;s GPU. Plus a frozen node, a smeared costmap and a new bump reflex.</summary><content type="html">&lt;p&gt;The CPU pipeline from &lt;a href=&quot;https://brettsbox.com/blueprint/blog/visual-slam-navigation/&quot;&gt;the last navigation post&lt;/a&gt; works, but it keeps the Jetson&#x27;s six CPU cores busy while its GPU mostly sits there. This week I moved the heavy lifting onto the GPU and rebuilt how the robot works out where it is.&lt;/p&gt;
 
 &lt;h2&gt;The new stack&lt;/h2&gt;
@@ -58,9 +108,7 @@
 
 &lt;h2&gt;Next&lt;/h2&gt;
 
-&lt;p&gt;Record the same drives through both pipelines and compare the CPU (Basalt) and GPU (cuVSLAM) maps side by side. Numbers are nice; maps you can overlay are better.&lt;/p&gt;
-
-
+&lt;p&gt;Next: the CPU (Basalt) and GPU (cuVSLAM) pipelines head to head. The first results, and why the GPU isn&#x27;t simply better, are in &lt;a href=&quot;https://brettsbox.com/blueprint/blog/basalt-vs-cuvslam/&quot;&gt;Basalt vs cuVSLAM, round one&lt;/a&gt;.&lt;/p&gt;
 </content></entry>
 <entry><title>Powering it with a Ridgid 18 V tool battery</title><link href="https://brettsbox.com/blueprint/blog/ridgid-18v-power/"/><id>https://brettsbox.com/blueprint/blog/ridgid-18v-power/</id><published>2026-11-13T00:00:00+00:00</published><updated>2026-11-13T00:00:00+00:00</updated><summary>With charging out of action, the robot now runs on a Ridgid power-tool battery through a fuse and a 15 V regulator. Plus: why the Roomba&#x27;s fuel gauge started lying, and the voltage monitor that will replace it.</summary><content type="html">&lt;p&gt;With the Roomba unable to charge its own battery (see &lt;a href=&quot;https://brettsbox.com/blueprint/blog/charging-error-3/&quot;&gt;Charging Error 3&lt;/a&gt;), I needed another way to keep it running. Ridgid 18 V lithium-ion tool batteries were already part of my workshop, along with a charger that knows exactly how to look after them. That&#x27;s a lot of well-managed energy sitting around doing nothing.&lt;/p&gt;
 

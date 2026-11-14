@@ -134,7 +134,7 @@
           <p class="bootlog__head">$ systemctl status roomba</p>
           <ul class="pills"><li class="pill pill--ok">Autonomous mapping</li><li class="pill pill--ok">GPU pipeline (cuVSLAM)</li><li class="pill pill--ok">Ridgid 18 V power</li><li class="pill pill--warn">Charging error 3</li><li class="pill pill--info">CPU vs GPU map comparison</li></ul>
         </div>
-        <p class="feature__links"><a class="btn" href="/blueprint/roomba/">[ open project ]</a> <a class="link" href="/blueprint/blog/gpu-cuvslam-nvblox/">latest: Moving the brains to the GPU: cuVSLAM, nvblox and sensor fusion</a></p>
+        <p class="feature__links"><a class="btn" href="/blueprint/roomba/">[ open project ]</a> <a class="link" href="/blueprint/blog/basalt-vs-cuvslam/">latest: Basalt vs cuVSLAM, round one: CPU or GPU?</a></p>
       </div>
     </div>
   </div>
@@ -145,6 +145,13 @@
     <h2 class="block__title" id="latest-title"><span class="block__no">02</span>Latest log entries</h2>
     <p class="term-line" aria-hidden="true"><span class="term__ps1">brett@brettsbox:~$</span> ls -lt log/ | head -3</p>
     <ol class="post-list"><li class="post-row" data-reveal>
+  <a class="post-row__link" href="/blueprint/blog/basalt-vs-cuvslam/">
+    <span class="post-row__meta"><span class="post-row__part">LOG-07</span><time datetime="2026-11-14">2026-11-14</time><span>4 min</span></span>
+    <span class="post-row__title">Basalt vs cuVSLAM, round one: CPU or GPU?</span>
+    <span class="post-row__summary">The robot can work out how it's moving with Basalt on the CPU or NVIDIA cuVSLAM on the GPU. The GPU holds still better; Basalt stays on track better once it moves. Here's the scorecard so far.</span>
+  </a>
+</li>
+<li class="post-row" data-reveal>
   <a class="post-row__link" href="/blueprint/blog/gpu-cuvslam-nvblox/">
     <span class="post-row__meta"><span class="post-row__part">LOG-06</span><time datetime="2026-11-14">2026-11-14</time><span>3 min</span></span>
     <span class="post-row__title">Moving the brains to the GPU: cuVSLAM, nvblox and sensor fusion</span>
@@ -157,15 +164,8 @@
     <span class="post-row__title">Powering it with a Ridgid 18 V tool battery</span>
     <span class="post-row__summary">With charging out of action, the robot now runs on a Ridgid power-tool battery through a fuse and a 15 V regulator. Plus: why the Roomba's fuel gauge started lying, and the voltage monitor that will replace it.</span>
   </a>
-</li>
-<li class="post-row" data-reveal>
-  <a class="post-row__link" href="/blueprint/blog/charging-error-3/">
-    <span class="post-row__meta"><span class="post-row__part">LOG-04</span><time datetime="2026-11-11">2026-11-11</time><span>3 min</span></span>
-    <span class="post-row__title">Chasing “Charging Error 3”</span>
-    <span class="post-row__summary">The Roomba refused to charge. A service manual, a reconstructed schematic, a multimeter and two spare chargers later, the fault is cornered but not yet caught.</span>
-  </a>
 </li></ol>
-    <p class="more"><a class="link" href="/blueprint/blog/">all 6 entries →</a></p>
+    <p class="more"><a class="link" href="/blueprint/blog/">all 7 entries →</a></p>
   </div>
 </section>
 

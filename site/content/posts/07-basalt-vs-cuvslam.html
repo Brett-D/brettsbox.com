@@ -1,0 +1,56 @@
+---
+title: "Basalt vs cuVSLAM, round one: CPU or GPU?"
+slug: basalt-vs-cuvslam
+date: 2026-11-14
+tags: roomba, vslam, gpu
+summary: The robot can work out how it's moving with Basalt on the CPU or NVIDIA cuVSLAM on the GPU. The GPU holds still better; Basalt stays on track better once it moves. Here's the scorecard so far.
+---
+<p>The robot now has two ways to work out how it's moving. <a href="{{base}}/blog/visual-slam-navigation/">Basalt</a> runs on the Jetson's CPU and <a href="{{base}}/blog/gpu-cuvslam-nvblox/">NVIDIA cuVSLAM</a> runs on its GPU. Both watch the same stereo camera and IMU, and one launch argument picks which one is in charge. That makes for a fair fight: I can record a run once and replay exactly the same camera frames through each.</p>
+
+<p>The side-by-side maps are still to come, but the early numbers already tell an interesting story: the GPU is <em>not</em> simply better.</p>
+
+<h2>The scorecard so far</h2>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th scope="col">Test</th><th scope="col">Basalt (CPU)</th><th scope="col">cuVSLAM (GPU)</th><th scope="col">Better</th></tr></thead>
+  <tbody>
+    <tr><td>Parked for 60 s: how far it thinks it moved</td><td>0.9 cm</td><td><strong>0.3 cm</strong></td><td>GPU</td></tr>
+    <tr><td>Replayed walk: jumps of more than 0.5 m</td><td><strong>None</strong></td><td>16</td><td>CPU</td></tr>
+    <tr><td>Replayed walk: height drift</td><td><strong>10× less</strong></td><td>10× more</td><td>CPU</td></tr>
+    <tr><td>Loop-closure check the map can afford</td><td><strong>Strict: 25 matching features</strong></td><td>Lenient: 15</td><td>CPU</td></tr>
+    <tr><td>Processor load</td><td>Busy CPU</td><td>Mostly GPU</td><td>Measuring in round two</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h2>Standing still: the GPU wins</h2>
+
+<p>The simplest honest test is to park the robot and ask it how far it has moved. The right answer is zero. Over a minute, the CPU pipeline thought the robot had crept 0.9 cm and the GPU pipeline 0.3 cm. Fuse the calibrated wheels into the GPU pipeline's filter and it drops to 0.07 cm, as I found in <a href="{{base}}/blog/gpu-cuvslam-nvblox/">the last post</a>.</p>
+
+<h2>On the move: Basalt wins</h2>
+
+<p>Parking is the easy case. For the hard one, I carried the camera around the house, recorded everything it saw, and replayed the recording through both.</p>
+
+<p>A <em>jump</em> is when the odometry suddenly decides the camera has teleported more than half a metre. The watchdog catches those so they never reach the map, but each one is a moment when the robot doesn't really know where it is. Basalt had none. cuVSLAM had 16, and its idea of the camera's height drifted about ten times as far as Basalt's. On the robot, cuVSLAM is told to stay in the floor plane, so height drift matters less there, but it's a good sign of how well each one is really tracking.</p>
+
+<h3>It started at 544</h3>
+
+<p>The first replay through cuVSLAM was a disaster: 544 jumps and 260 km of imagined travel in four minutes. Its default IMU settings are tuned for Intel RealSense cameras and trusted this camera's IMU far too much, so ordinary sensor noise looked like real motion. Telling it the IMU is ten times noisier brought that down to 16 jumps, and the number of times the watchdog caught vision disagreeing with the gyro fell from 157 to 31.</p>
+
+<h2>Why the map cares</h2>
+
+<p>Drift is what loop closure has to clean up. When RTAB-Map recognises a place it has seen before, it checks the match by counting the features both views share, then pulls the map straight.</p>
+
+<p>With cuVSLAM, the corrections were big enough that I had to loosen that check to 15 matching features and tell RTAB-Map the odometry was less certain. Otherwise it rejected real loop closures, including one that needed a 7° correction. With Basalt, that loose check became a liability: similar-looking doors matched the wrong place and warped the map. Raising it to 25 gave a clean map on the same walk. Better odometry lets the map be pickier, and being picky is what keeps it straight.</p>
+
+<aside class="callout">
+  <p class="callout__title">So which one drives?</p>
+  <p>For now, Basalt. Staying on track while moving matters more than holding still, so the CPU pipeline is still the robot's default. The GPU pipeline is staying too: it takes the load off the CPU, and with the wheels fused in, it's the steadiest when parked. One launch argument switches between them.</p>
+</aside>
+
+<h2>Round two: maps</h2>
+
+<p>Numbers are nice; maps you can overlay are better. The next test replays one recorded drive through both pipelines, each building its own map from scratch, with the robot's drivers switched off so nothing can move. It counts tracking losses and loop closures, measures the map's area, and checks how far from the start each one thinks the robot finished. If the drive ends where it began, the right answer is zero. It also records how hard each one works the CPU and GPU.</p>
+
+{{soon:The same recorded drive mapped by both pipelines, side by side and overlaid.|Maps coming soon}}
