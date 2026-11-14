@@ -228,8 +228,9 @@ code, pre, kbd { font-family: var(--mono); font-size: 0.88em; }
 .map__frontiers circle:nth-child(3) { animation-delay: 1.2s; }
 @keyframes pulse { 50% { transform: scale(1.8); opacity: 0.4; } }
 .map__plan { fill: none; stroke: var(--line-2); stroke-width: 2; stroke-dasharray: 6 8; }
-.map__trail { fill: none; stroke: url(#trail); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: trail 16s linear infinite; }
-@keyframes trail { 0% { stroke-dashoffset: 1; } 85% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+.map__trail { fill: none; stroke: url(#trail); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: trail 18s linear infinite; }
+/* Same duration as the robot's animateMotion so the trail ends at the robot; it fades as the loop closes. */
+@keyframes trail { 0% { stroke-dashoffset: 1; } 88% { opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
 .map__body { fill: #0b1222; stroke: var(--cyan); stroke-width: 3; }
 .map__heading { fill: none; stroke: var(--cyan); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
 .map__static-robot { display: none; }
