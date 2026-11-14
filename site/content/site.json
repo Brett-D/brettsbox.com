@@ -61,7 +61,7 @@
       "path": "/homelab/",
       "code": "PRJ-02",
       "title": "Homelab",
-      "summary": "One small Proxmox box running my firewall, photo library, file share, home automation and this website.",
+      "summary": "One small Proxmox box running my firewall, photo library, file share and home automation.",
       "status": "Running",
       "status_kind": "ok",
       "accent": "lime",
@@ -108,16 +108,6 @@
         { "title": "Q17 P-channel FET", "detail": "ZXMP6A17G, gate driven by Q20" },
         { "title": "Q18 P-channel FET", "detail": "ZXMP6A17G, gate driven by Q21" },
         { "title": "NiMH battery", "detail": "14.4 V pack and the robot's loads" }
-      ]
-    },
-    "serve": {
-      "caption": "How this website gets from my editor to your browser.",
-      "steps": [
-        { "title": "git push", "detail": "Plain HTML, CSS and a little JavaScript" },
-        { "title": "GitHub", "detail": "The repository is the single source of truth" },
-        { "title": "Container pulls", "detail": "A systemd timer fetches new commits every two minutes" },
-        { "title": "nginx", "detail": "Serves static files from a small Proxmox container" },
-        { "title": "Cloudflare Tunnel", "detail": "Outbound-only connection, no open ports at home" }
       ]
     }
   }

@@ -4,8 +4,8 @@ slug: homelab
 nav: homelab
 sheet: PRJ-02
 eyebrow: Project 02 · Running
-lede: One quiet little PC in the corner runs my firewall, photo library, file share, home automation and this website. Here's what's on it and why.
-description: A small self-hosted homelab on Proxmox VE: an OPNsense firewall with segmented networks, ZFS storage, Immich and Ente for photos, Home Assistant, WireGuard, and this website behind a Cloudflare Tunnel.
+lede: One quiet little PC in the corner runs my firewall, photo library, file share and home automation. Here's what's on it and why.
+description: A small self-hosted homelab on Proxmox VE: an OPNsense firewall with segmented networks, ZFS storage, Immich and Ente for photos, Home Assistant and WireGuard.
 ---
 <section class="section" aria-labelledby="why">
 <h2 id="why">Why self-host?</h2>
@@ -64,17 +64,7 @@ description: A small self-hosted homelab on Proxmox VE: an OPNsense firewall wit
     <h3>Account portal</h3>
     <p>A small self-service portal I wrote in Rust, so family members can manage their own accounts without asking me.</p>
   </article>
-  <article class="service">
-    <h3>This website</h3>
-    <p>Static files served by nginx from a tiny container, published through a Cloudflare Tunnel.</p>
-  </article>
 </div>
-</section>
-
-<section class="section" aria-labelledby="site">
-<h2 id="site">How this site is served</h2>
-<p>The tunnel is the clever part: the container makes an <em>outbound</em> connection to Cloudflare, and visitors reach the site through it. There are no open ports on my router for the website at all.</p>
-{{flow:serve}}
 </section>
 
 <section class="section" aria-labelledby="next">
