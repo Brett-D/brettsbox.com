@@ -1,0 +1,13 @@
+<section class="page">
+  <header class="page-head">
+    <div class="wrap page-head__inner">
+      <p class="label">LOG · {{post_count}} entries · newest first</p>
+      <h1 class="page-head__title">Build log</h1>
+      <p class="page-head__lede">Notes from the bench: what I tried, what broke, what I measured and what finally worked. Subscribe with the <a href="{{base}}/feed.xml">Atom feed</a>.</p>
+    </div>
+  </header>
+  <div class="wrap blog-index">
+    <p class="term-line" aria-hidden="true"><span class="term__ps1">brett@brettsbox:~$</span> ls -lt log/</p>
+{{post_list}}
+  </div>
+</section>

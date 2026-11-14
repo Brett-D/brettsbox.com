@@ -1,0 +1,53 @@
+---
+title: Chasing “Charging Error 3”
+slug: charging-error-3
+date: 2026-11-11
+tags: roomba, electronics, repair
+summary: The Roomba refused to charge. A service manual, a reconstructed schematic, a multimeter and two spare chargers later, the fault is cornered but not yet caught.
+image: /assets/img/roomba-charging-block-diagram.webp
+---
+<p>Every robot project has a detour. Mine started when I put the Roomba back on its charger and it refused, reporting <strong>Charging Error 3</strong>. This post is honest about where it ended: the fault is narrowed down, but not fixed. Yet.</p>
+
+<h2>What error 3 means</h2>
+
+<p>The 500-series service manual is short on detail but clear on this one: <strong>error 3 is a failed self-test of the charging MOSFETs</strong>. When charging starts, the robot briefly switches its charging transistors and checks that they behave. If the result isn't what the firmware expects, it gives up and shows error 3.</p>
+
+<p>That points at a specific part of the board, which is a good start. It doesn't tell you which part.</p>
+
+<h2>Tracing the charge path</h2>
+
+<p>With no official schematic, I pieced one together from preliminary sketches, photos of the board and the markings on each part. Simplified, the charging current takes this route:</p>
+
+{{flow:charge}}
+
+<p>Q17 and Q18 are <strong>ZXMP6A17G</strong> P-channel MOSFETs, two switches in series between the charger and the battery. A P-channel MOSFET turns <em>on</em> when its gate is pulled several volts <em>below</em> its source. Small transistors marked “W2X” (most likely PMBT4401 NPNs: Q20 to Q23), plus a PMBT4403 PNP (Q12), do that pulling under the control of the robot's processor and a comparator that watches the charge current.</p>
+
+{{img:roomba-charging-block-diagram.webp|Block diagram of the reconstructed Roomba 550 charging circuit. Power path: side charging jack and dock input, filters, fuse F2, diode D58, then P-channel MOSFETs Q17 and Q18 in series to the battery. Gate-driver section: control networks feeding driver transistors Q20 and Q21, which pull the MOSFET gates through 2 kilohm resistors.|My working reconstruction of the charging circuit: the power path on top, the gate drivers below. Not an official schematic.}}
+
+{{img:roomba-charging-schematic.webp|Detailed reconstructed schematic of the Roomba 550 R3 board charging path and charge-enable logic, with red test points TP1 to TP11 marked on the MOSFET sources, gates and driver bases.|The same circuit as a schematic, with the test points I probed (TP1 to TP11). Click for the full-resolution version.|roomba-charging-schematic-full.webp}}
+
+<h2>Measuring</h2>
+
+<p>With everything disconnected, I worked through the parts in the path with a multimeter in diode and resistance mode: the fuse, D58, the body diodes of Q17 and Q18, and each driver transistor's junctions. Annotated photos helped me keep track of which leg was which on parts smaller than a grain of rice.</p>
+
+<div class="figure-pair">
+{{img:roomba-q17-q18.webp|Photo of the Roomba main board with charging MOSFETs Q17 and Q18 highlighted, and an enlarged view of Q18 with its two outer legs labelled A and B and the tab labelled T.|Q17 and Q18 on the board. The labels mark physical legs, not an assumed pinout.}}
+{{img:roomba-q20-q21.webp|Close-up of driver transistors Q20 and Q21 below the MOSFETs, each with three test points circled and labelled L, R and T.|The driver transistors Q20 and Q21, ready for diode-mode checks.}}
+</div>
+
+<p>Then the live measurements: with the charger connected, I measured the MOSFET gates relative to their sources to see whether the drivers were actually switching them. None of these checks turned up an obviously dead part.</p>
+
+<h2>Ruling out the easy answers</h2>
+
+<p>Before blaming the board, I swapped in a <strong>known-good battery</strong>, then a <strong>second charger</strong>. Error 3 stayed both times. That rules out the cheap fixes and puts the fault squarely in the robot's own charge-control circuitry.</p>
+
+<h2>Where it stands</h2>
+
+<p>The self-test lasts a fraction of a second. A multimeter averages over far longer than that, so it simply can't see what the gates are doing during the test. The next step is an oscilloscope on the gates and driver bases, triggered on the moment the charger is connected, to catch the self-test in the act.</p>
+
+<p>Until then, the robot runs on a different power source entirely. That's the <a href="{{base}}/blog/ridgid-18v-power/">next post</a>.</p>
+
+<aside class="callout callout--danger">
+  <p class="callout__title">Please don't do the “obvious” fix</p>
+  <p>It's tempting to bridge the charging MOSFETs, or to charge the NiMH pack straight from a bench supply. Don't. Those FETs are how the robot stops charging when the pack is full; NiMH cells need proper end-of-charge detection, and overcharging them can make them vent or catch fire. Fix the circuit or use a real NiMH charger.</p>
+</aside>

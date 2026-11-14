@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D printing · Brett&#x27;s Box</title>
+<meta name="description" content="An Ender 3 V2 upgraded with a Sprite Pro direct-drive extruder, BLTouch and Klipper, a calibrated PLA profile, and parametric parts generated in Python, including the Roomba development platform.">
+<link rel="canonical" href="https://brettsbox.com/lab/printing/">
+<meta property="og:site_name" content="Brett&#x27;s Box">
+<meta property="og:title" content="3D printing · Brett&#x27;s Box">
+<meta property="og:description" content="An Ender 3 V2 upgraded with a Sprite Pro direct-drive extruder, BLTouch and Klipper, a calibrated PLA profile, and parametric parts generated in Python, including the Roomba development platform.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://brettsbox.com/lab/printing/">
+<meta property="og:image" content="https://brettsbox.com/assets/img/roomba-platform-assembly.webp">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#070b16">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/lab/favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/atom+xml" title="Brett's Box build log" href="/lab/feed.xml">
+<link rel="preload" href="/assets/fonts/SpaceGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/lab/style.css">
+<script>document.documentElement.className = 'js';</script>
+<script src="/lab/app.js" defer></script>
+</head>
+<body class="page-printing">
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="preview-bar">
+  <div class="wrap preview-bar__inner">
+    <span><span class="preview-bar__dot" aria-hidden="true"></span>Design preview: <strong>Lab</strong></span>
+    <a href="/blueprint/printing/">View this page in Blueprint <span aria-hidden="true">→</span></a>
+  </div>
+</div>
+<header class="site-header">
+  <div class="wrap site-header__inner">
+    <a class="brand" href="/lab/">
+      <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="bm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2de2ff"/><stop offset=".55" stop-color="#8b6cff"/><stop offset="1" stop-color="#ff4fa3"/></linearGradient></defs><rect x="1.5" y="1.5" width="29" height="29" rx="8" fill="none" stroke="url(#bm)" stroke-width="3"/><circle cx="16" cy="16" r="6.5" fill="url(#bm)"/><path d="M16 9.5v3" stroke="#070b16" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <span class="brand__name">Brett's Box</span>
+    </a>
+    <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+      <span class="nav-toggle__bars" aria-hidden="true"></span><span class="nav-toggle__label">Menu</span>
+    </button>
+    <nav class="site-nav" id="site-nav" aria-label="Main">
+      <ul>
+<li><a href="/lab/">Home</a></li>
+<li><a href="/lab/roomba/">Roomba</a></li>
+<li><a href="/lab/blog/">Build log</a></li>
+<li><a href="/lab/homelab/">Homelab</a></li>
+<li><a href="/lab/printing/" aria-current="page">3D printing</a></li>
+<li><a href="/lab/about/">About</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<main id="main">
+<article class="page">
+  <header class="page-head">
+    <div class="page-head__bg" aria-hidden="true"></div>
+    <div class="wrap">
+      <p class="kicker">Project 03 · Printing</p>
+      <h1 class="page-head__title">3D printing</h1>
+      <p class="page-head__lede">A tuned-up Ender 3 V2 and a habit of designing parts in code. It's the workshop that holds every other project together, sometimes literally.</p>
+    </div>
+  </header>
+  <div class="prose">
+<section class="section" aria-labelledby="printer">
+<h2 id="printer">The printer</h2>
+<p>A Creality Ender 3 V2 is where a lot of people start, and it's still where most of my parts come from. Out of the box it's fine. With a few upgrades it's genuinely good.</p>
+<dl class="spec-grid">
+  <div><dt>Printer</dt><dd>Creality Ender 3 V2</dd></div>
+  <div><dt>Extruder</dt><dd>Creality Sprite Pro direct drive: crisper retraction, happier with flexible filament</dd></div>
+  <div><dt>Bed levelling</dt><dd>BLTouch probe on a stiffened side mount (my remix)</dd></div>
+  <div><dt>Firmware</dt><dd>Klipper on a Raspberry Pi, controlled through Mainsail in the browser</dd></div>
+  <div><dt>Slicer</dt><dd>OrcaSlicer</dd></div>
+  <div><dt>Bed size</dt><dd>229 × 208 mm usable, the limit every design below has to fit</dd></div>
+</dl>
+<figure class="figure figure--soon" data-reveal><div class="soon" role="img" aria-label="Placeholder: Photo coming soon"><svg viewBox="0 0 48 48" aria-hidden="true" class="soon__icon"><path d="M6 15h9l3-5h12l3 5h9v24H6z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="24" cy="26" r="7" fill="none" stroke="currentColor" stroke-width="2.5"/></svg><span class="soon__label">Photo coming soon</span></div><figcaption><span class="fig-no">Fig. 01</span> The Ender 3 V2 with the Sprite Pro extruder and BLTouch side mount.</figcaption></figure>
+</section>
+
+<section class="section" aria-labelledby="profile">
+<h2 id="profile">My calibrated PLA profile</h2>
+<p>Klipper makes calibration measurable rather than a matter of feel. These are the numbers my PLA settled on after a round of calibration prints:</p>
+<div class="table-wrap">
+<table class="profile-table">
+  <thead><tr><th scope="col">Setting</th><th scope="col">Value</th><th scope="col">What it does</th></tr></thead>
+  <tbody>
+    <tr><td>Nozzle temperature</td><td><strong>210 °C</strong></td><td>Strong layer bonding without stringing</td></tr>
+    <tr><td>Flow ratio</td><td><strong>0.97</strong></td><td>Pushes 3% less plastic than the slicer's default, for accurate walls and clean top surfaces</td></tr>
+    <tr><td>Pressure advance</td><td><strong>0.035</strong></td><td>Anticipates nozzle pressure so corners stay sharp instead of bulging</td></tr>
+  </tbody>
+</table>
+</div>
+</section>
+
+<section class="section" aria-labelledby="projects">
+<h2 id="projects">Projects</h2>
+
+<article class="print-project" id="roomba-platform">
+<h3>Roomba development platform</h3>
+<p>The parts that carry the <a href="/lab/roomba/">Roomba robot's</a> brains aren't drawn by hand. They're generated by a Python script using <strong>manifold3d</strong> and <strong>trimesh</strong>. Change a dimension and the whole platform regenerates, then checks itself:</p>
+<ul>
+  <li><strong>Automatic collision checks</strong>: the script verifies that no part intersects another, or the Roomba underneath.</li>
+  <li><strong>An open frame</strong> carries the camera up front on posts, with a cradle for the Jetson and one for the battery.</li>
+  <li><strong>Tool-less assembly</strong> with snap pins and dovetails, so it comes apart in seconds on the bench.</li>
+  <li><strong>Keeps the essentials reachable</strong>: the CLEAN button and the serial port stay uncovered.</li>
+  <li><strong>Every part fits a 229 × 208 mm bed</strong>, so the frame splits in two halves that join on dovetails.</li>
+</ul>
+<p>The STLs and the generator live in <a href="https://github.com/Brett-D/roomba-jetson-stack/tree/main/hardware/platform">roomba-jetson-stack/hardware/platform</a>.</p>
+<figure class="figure " data-reveal><a class="figure__frame" href="/assets/img/roomba-platform-assembly.webp" title="Open full-size image"><img src="/assets/img/roomba-platform-assembly.webp" alt="Four CAD views of the Roomba platform: assembled on the robot, an exploded stack of legs, two frame halves, cradle, holder and camera case, a top view with battery, Jetson and camera case positions, and a side section." width="1540" height="1120" loading="lazy" decoding="async"></a><figcaption><span class="fig-no">Fig. 02</span> Generated assembly: the exploded view shows the stack from legs to frame to cradles and camera case.</figcaption></figure>
+<figure class="figure " data-reveal><a class="figure__frame" href="/assets/img/roomba-platform-canopy.webp" title="Open full-size image"><img src="/assets/img/roomba-platform-canopy.webp" alt="Three views of an alternative platform design: assembled with a perforated canopy over the electronics, the same with the canopy removed, and a front drawing of the camera shroud with its bolt slots." width="1470" height="560" loading="lazy" decoding="async"></a><figcaption><span class="fig-no">Fig. 03</span> A variant with a perforated canopy over the electronics, and the camera shroud drawn to the millimetre.</figcaption></figure>
+</article>
+
+<article class="print-project" id="bltouch-mount">
+<h3>Stiffened BLTouch side mount</h3>
+<p>The popular side mount for the BLTouch flexed just enough to make first layers inconsistent. My remix adds material where it bends, so the probe triggers at the same height every time.</p>
+<figure class="figure figure--soon" data-reveal><div class="soon" role="img" aria-label="Placeholder: Photo coming soon"><svg viewBox="0 0 48 48" aria-hidden="true" class="soon__icon"><path d="M6 15h9l3-5h12l3 5h9v24H6z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="24" cy="26" r="7" fill="none" stroke="currentColor" stroke-width="2.5"/></svg><span class="soon__label">Photo coming soon</span></div><figcaption><span class="fig-no">Fig. 04</span> The stiffened BLTouch side mount on the Sprite Pro.</figcaption></figure>
+</article>
+
+<article class="print-project" id="nas-enclosure">
+<h3>NAS enclosure</h3>
+<p>A printed enclosure for network storage hardware, so the homelab's disks have a proper home.</p>
+<figure class="figure figure--soon" data-reveal><div class="soon" role="img" aria-label="Placeholder: Photo coming soon"><svg viewBox="0 0 48 48" aria-hidden="true" class="soon__icon"><path d="M6 15h9l3-5h12l3 5h9v24H6z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="24" cy="26" r="7" fill="none" stroke="currentColor" stroke-width="2.5"/></svg><span class="soon__label">Photo coming soon</span></div><figcaption><span class="fig-no">Fig. 05</span> The printed NAS enclosure.</figcaption></figure>
+</article>
+</section>
+
+<section class="section" aria-labelledby="workflow">
+<h2 id="workflow">How I design parts</h2>
+<ol class="steps">
+  <li><strong>Measure</strong> the real thing with calipers, twice.</li>
+  <li><strong>Describe it in code</strong>: dimensions become variables, so the design can change without starting over.</li>
+  <li><strong>Check it automatically</strong>: collisions, clearances and whether it fits the bed.</li>
+  <li><strong>Slice in OrcaSlicer</strong> with the calibrated profile.</li>
+  <li><strong>Print, test-fit, adjust a number, repeat.</strong></li>
+</ol>
+</section>
+
+  </div>
+</article>
+
+</main>
+<footer class="site-footer">
+  <div class="wrap site-footer__inner">
+    <div class="site-footer__brand">
+      <p class="site-footer__title">Brett's Box</p>
+      <p>A maker's lab notebook: robots, homelab and 3D printing. Self-hosted, hand-built, no trackers.</p>
+    </div>
+    <ul class="site-footer__links">
+      <li><a href="https://github.com/Brett-D">GitHub</a></li>
+      <li><a href="/lab/feed.xml">Atom feed</a></li>
+      <li><a href="/blueprint/printing/">Blueprint design</a></li>
+      <li><a href="/">Pick a design</a></li>
+    </ul>
+    <p class="site-footer__fine">© 2026 Brett · Served from a Proxmox container through a Cloudflare Tunnel.</p>
+  </div>
+</footer>
+</body>
+</html>

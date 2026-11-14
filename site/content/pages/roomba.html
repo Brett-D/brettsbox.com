@@ -1,0 +1,80 @@
+---
+title: Roomba 550 → autonomous mapping robot
+slug: roomba
+nav: roomba
+sheet: PRJ-01
+eyebrow: Project 01 · Active
+lede: A 2007-era Roomba 550 with a Jetson Orin Nano and a stereo depth camera on its back. It maps the house with visual SLAM, plans its own routes and explores rooms it has never seen.
+description: Turning a 2007 Roomba 550 into an autonomous mapping robot with a Jetson Orin Nano Super, a MYNT EYE D1000 stereo camera, ROS 2 Jazzy, visual SLAM and Nav2.
+image: /assets/media/vslam-demo-poster.jpg
+---
+{{video:vslam}}
+
+<section class="section" aria-labelledby="goal">
+<h2 id="goal">The goal</h2>
+<p>Old robot vacuums find walls by hitting them. I wanted to see how far a nearly twenty-year-old Roomba could go with modern robotics bolted on top: a robot that <strong>maps the house on its own</strong>, <strong>avoids obstacles it can see</strong>, and eventually becomes <strong>a smarter vacuum</strong> that cleans the rooms I pick and knows when it's finished.</p>
+<p>The Roomba 550 is a great base for this because iRobot published its <em>Open Interface</em>: a serial protocol that lets you drive the wheels and read every sensor. Under the dust bin, it's a perfectly good robot.</p>
+</section>
+
+<section class="section" aria-labelledby="status">
+<h2 id="status">Current status</h2>
+<ul class="status-board">
+  <li><span class="pill pill--ok">Working</span><div><strong>Autonomous exploration and mapping</strong><span>Explore &amp; map drives to frontiers until the map is complete; tap-to-go works from my phone.</span></div></li>
+  <li><span class="pill pill--ok">Working</span><div><strong>GPU pipeline</strong><span>cuVSLAM, an EKF fusing wheels, gyro and vision, and nvblox obstacles in the local costmap.</span></div></li>
+  <li><span class="pill pill--ok">Working</span><div><strong>Ridgid 18 V power</strong><span>Fused, regulated to 15 V, soldered to the battery contacts. No docking in this setup.</span></div></li>
+  <li><span class="pill pill--info">In progress</span><div><strong>Pack-voltage monitor</strong><span>ADS1115 on the Jetson's I2C bus so the robot stops before the pack goes flat.</span></div></li>
+  <li><span class="pill pill--info">Next</span><div><strong>CPU vs GPU map comparison</strong><span>Recording the same drives through Basalt and cuVSLAM and overlaying the maps.</span></div></li>
+  <li><span class="pill pill--warn">Unresolved</span><div><strong>Charging Error 3</strong><span>Fault is in the robot's charge-control circuitry. Needs an oscilloscope to catch the self-test.</span></div></li>
+</ul>
+</section>
+
+<section class="section" aria-labelledby="hardware">
+<h2 id="hardware">Hardware</h2>
+<dl class="spec-grid">
+  <div><dt>Base</dt><dd>iRobot Roomba 550 (R3 board), Open Interface at 115200 baud</dd></div>
+  <div><dt>Compute</dt><dd>NVIDIA Jetson Orin Nano Super 8 GB, 256 GB NVMe</dd></div>
+  <div><dt>Vision</dt><dd>MYNT EYE D1000 stereo camera with IR depth and IMU, on USB 3</dd></div>
+  <div><dt>Serial link</dt><dd>FT232 USB-TTL adapter, jumper on 5 V, to the 7-pin Mini-DIN port</dd></div>
+  <div><dt>Power</dt><dd>Ridgid 18 V Li-ion pack → 7.5 A fuse → 15 V / 12 A buck regulator</dd></div>
+  <div><dt>Chassis</dt><dd>Parametric 3D-printed platform with snap pins and dovetails</dd></div>
+  <div><dt>Software</dt><dd>ROS 2 Jazzy, cuVSLAM / Basalt, robot_localization, RTAB-Map, Nav2, nvblox</dd></div>
+  <div><dt>Interface</dt><dd>Web dashboard: live map, camera, drive pad, tap-to-go, Explore &amp; map</dd></div>
+</dl>
+</section>
+
+<section class="section" aria-labelledby="architecture">
+<h2 id="architecture">How it works</h2>
+<p>Navigation is a relay race from the camera to the wheels. Each stage adds something and hands on to the next, with wheel odometry and the gyro filling in whenever vision loses track:</p>
+{{flow:pipeline}}
+<p>Power and data take a simpler route: one tool battery, one regulator, one USB camera and one serial adapter.</p>
+{{img:roomba-system-wiring.webp|System wiring diagram: Ridgid 18 volt pack, 7.5 amp fuse and 15 volt buck regulator powering the Roomba 550 and the Jetson Orin Nano; MYNT EYE camera on USB 3; FT232 adapter at 5 volts to the Roomba's Mini-DIN serial port.|System wiring: power across the top, camera and serial link below.}}
+</section>
+
+<section class="section" aria-labelledby="platform">
+<h2 id="platform">The platform</h2>
+<p>Everything rides on a 3D-printed platform generated from Python code, with automatic collision checks, tool-less snap pins and dovetails. It keeps the CLEAN button and the serial port reachable and prints on a 229 × 208 mm bed. More on the <a href="{{base}}/printing/">3D printing page</a>.</p>
+{{img:roomba-platform-assembly.webp|CAD renders of the 3D-printed platform on the Roomba: assembled, exploded into legs, frame, cradle and camera case, a top view and a side section.|The platform, assembled and exploded, with a top view and side section.}}
+</section>
+
+<section class="section" aria-labelledby="code">
+<h2 id="code">Code</h2>
+<div class="repo-grid">
+  <a class="repo-card" href="https://github.com/Brett-D/roomba-jetson-stack">
+    <span class="repo-card__owner">Brett-D /</span>
+    <strong class="repo-card__name">roomba-jetson-stack</strong>
+    <span class="repo-card__desc">The whole robot: launch files, Nav2 configs, perception and exploration nodes, the web dashboard, camera driver, diagnostics and the printed platform.</span>
+    <span class="repo-card__meta">ROS 2 Jazzy · Jetson</span>
+  </a>
+  <a class="repo-card" href="https://github.com/Brett-D/roomba-serial-ros2">
+    <span class="repo-card__owner">Brett-D /</span>
+    <strong class="repo-card__name">roomba-serial-ros2</strong>
+    <span class="repo-card__desc">Talk to any Roomba 500-series over serial: wiring diagrams, Open Interface notes, a CLI and a ROS 2 driver with 25 unit tests.</span>
+    <span class="repo-card__meta">Apache-2.0 · ROS 2 Jazzy</span>
+  </a>
+</div>
+</section>
+
+<section class="section" aria-labelledby="log">
+<h2 id="log">Build log</h2>
+{{posts:roomba}}
+</section>

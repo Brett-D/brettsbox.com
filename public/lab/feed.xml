@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Brett&#x27;s Box build log</title><subtitle>Build notes from the bench: what I tried, what broke, what I measured and what finally worked.</subtitle><link href="https://brettsbox.com/lab/feed.xml" rel="self"/><link href="https://brettsbox.com/lab/"/><id>https://brettsbox.com/lab/</id><updated>2026-11-14T00:00:00+00:00</updated><author><name>Brett</name></author>
+<entry><title>Moving the brains to the GPU: cuVSLAM, nvblox and sensor fusion</title><link href="https://brettsbox.com/lab/blog/gpu-cuvslam-nvblox/"/><id>https://brettsbox.com/lab/blog/gpu-cuvslam-nvblox/</id><published>2026-11-14T00:00:00+00:00</published><updated>2026-11-14T00:00:00+00:00</updated><summary>NVIDIA cuVSLAM for visual odometry, an EKF that fuses calibrated wheels, gyro and vision, and nvblox for obstacle mapping, all on the Jetson&#x27;s GPU. Plus a frozen node, a smeared costmap and a new bump reflex.</summary><content type="html">&lt;p&gt;The CPU pipeline from &lt;a href=&quot;https://brettsbox.com/lab/blog/visual-slam-navigation/&quot;&gt;the last navigation post&lt;/a&gt; works, but it keeps the Jetson&#x27;s six CPU cores busy while its GPU mostly sits there. This week I moved the heavy lifting onto the GPU and rebuilt how the robot works out where it is.&lt;/p&gt;
+
+&lt;h2&gt;The new stack&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;NVIDIA cuVSLAM&lt;/strong&gt; replaces Basalt for visual odometry. Same job (estimate motion from the stereo cameras and IMU), but on the GPU.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;robot_localization&lt;/strong&gt; runs an extended Kalman filter (EKF) that fuses every motion source into one best estimate.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;nvblox&lt;/strong&gt; builds a 3D model of nearby obstacles from the depth camera, on the GPU, and turns it into a costmap for Nav2.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2&gt;Fusing wheels, gyro and vision&lt;/h2&gt;
+
+&lt;p&gt;An EKF is only as good as what you tell it about each sensor, so I calibrated each input before letting it in:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Wheel speed&lt;/strong&gt;, with measured correction factors: forward distance × 0.952 and rotation × 0.71. That second number is the carpet scrub from last time, now measured and corrected.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;The camera&#x27;s gyro&lt;/strong&gt;, using noise figures from a three-hour stationary IMU recording and a measured static gyro bias, so the filter knows exactly how much to trust it.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Visual odometry, fused differentially.&lt;/strong&gt; The filter uses the &lt;em&gt;change&lt;/em&gt; in the VIO pose between updates rather than the pose itself. If cuVSLAM loses tracking and resets, it can&#x27;t teleport the robot across the room.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2&gt;Results: standing still&lt;/h2&gt;
+
+&lt;p&gt;The simplest honest test is to park the robot and watch how far it &lt;em&gt;thinks&lt;/em&gt; it has moved:&lt;/p&gt;
+
+&lt;div class=&quot;table-wrap&quot;&gt;
+&lt;table&gt;
+  &lt;thead&gt;&lt;tr&gt;&lt;th scope=&quot;col&quot;&gt;Pipeline&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;Test&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;Apparent drift&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;&lt;td&gt;CPU (Basalt)&lt;/td&gt;&lt;td&gt;Parked, 60 s&lt;/td&gt;&lt;td&gt;0.9 cm&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;GPU (cuVSLAM)&lt;/td&gt;&lt;td&gt;Parked, 60 s&lt;/td&gt;&lt;td&gt;&lt;strong&gt;0.3 cm&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;GPU + wheels in the EKF&lt;/td&gt;&lt;td&gt;Parked, 30 s&lt;/td&gt;&lt;td&gt;&lt;strong&gt;0.07 cm, 0.03°&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Standing still is the easy case, of course. The real test is driving, which is next.&lt;/p&gt;
+
+&lt;h2&gt;What went wrong (and got fixed)&lt;/h2&gt;
+
+&lt;h3&gt;The costmap that walled the robot in&lt;/h3&gt;
+
+&lt;p&gt;I first added nvblox&#x27;s obstacles to both of Nav2&#x27;s costmaps. In the &lt;em&gt;global&lt;/em&gt; costmap, which lives in the map frame, its marks never cleared, and every time RTAB-Map corrected the map they smeared sideways. After a few minutes the robot was surrounded by phantom walls. Now nvblox only feeds the &lt;em&gt;local&lt;/em&gt; costmap, a small window that rolls along with the robot and is rebuilt constantly.&lt;/p&gt;
+
+&lt;h3&gt;The node that froze mid-drive&lt;/h3&gt;
+
+&lt;p&gt;Halfway through a test drive, my floor-obstacle node stopped publishing. The cause was a race between a ROS 2 TF listener&#x27;s background thread and my own code. The good news: the collision monitor noticed the missing data and stopped the robot, exactly as designed. The race is fixed, and I trust that safety layer a lot more now.&lt;/p&gt;
+
+&lt;h3&gt;A bump reflex&lt;/h3&gt;
+
+&lt;p&gt;When the bumper does trigger, the robot now has a reflex: back up about 8 cm and turn away, before the planner tries again. It&#x27;s a small thing that makes it look a lot less stuck.&lt;/p&gt;
+
+&lt;h3&gt;Faster storage&lt;/h3&gt;
+
+&lt;p&gt;Recording stereo images, depth and every sensor topic eats disk bandwidth. I swapped in a faster 256 GB NVMe drive, which manages about 1.8 GB/s on the Jetson&#x27;s PCIe Gen3 x4 slot.&lt;/p&gt;
+
+&lt;h2&gt;Next&lt;/h2&gt;
+
+&lt;p&gt;Record the same drives through both pipelines and compare the CPU (Basalt) and GPU (cuVSLAM) maps side by side. Numbers are nice; maps you can overlay are better.&lt;/p&gt;
+
+
+</content></entry>
+<entry><title>Powering it with a Ridgid 18 V tool battery</title><link href="https://brettsbox.com/lab/blog/ridgid-18v-power/"/><id>https://brettsbox.com/lab/blog/ridgid-18v-power/</id><published>2026-11-13T00:00:00+00:00</published><updated>2026-11-13T00:00:00+00:00</updated><summary>With charging out of action, the robot now runs on a Ridgid power-tool battery through a fuse and a 15 V regulator. Plus: why the Roomba&#x27;s fuel gauge started lying, and the voltage monitor that will replace it.</summary><content type="html">&lt;p&gt;With the Roomba unable to charge its own battery (see &lt;a href=&quot;https://brettsbox.com/lab/blog/charging-error-3/&quot;&gt;Charging Error 3&lt;/a&gt;), I needed another way to keep it running. Ridgid 18 V lithium-ion tool batteries were already part of my workshop, along with a charger that knows exactly how to look after them. That&#x27;s a lot of well-managed energy sitting around doing nothing.&lt;/p&gt;
+
+&lt;h2&gt;The power path&lt;/h2&gt;
+
+&lt;figure class=&quot;flow flow--power&quot; data-reveal&gt;&lt;ol class=&quot;flow__steps&quot;&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;01&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Ridgid 18 V pack&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Li-ion tool battery, 15–21 V&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;02&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;7.5 A blade fuse&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Right at the pack, before anything else&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;03&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;15 V / 12 A buck&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Steady 15 V no matter how full the pack is&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;04&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Roomba + Jetson&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Soldered to the battery contacts; Jetson on its barrel jack&lt;/span&gt;&lt;/li&gt;&lt;/ol&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 01&lt;/span&gt; How the robot is powered while the charging fault is unresolved.&lt;/figcaption&gt;&lt;/figure&gt;
+
+&lt;p&gt;A full Ridgid pack sits around 20–21 V and sags towards 15 V as it empties. That&#x27;s more than the Roomba ever sees from its own NiMH pack when full, and it changes as the pack drains, so a &lt;strong&gt;15 V / 12 A buck regulator&lt;/strong&gt; turns it into one steady voltage. 15 V sits comfortably inside the Roomba&#x27;s normal battery range and inside the Jetson&#x27;s 9–20 V input.&lt;/p&gt;
+
+&lt;p&gt;The regulator&#x27;s output is soldered to the Roomba&#x27;s battery contacts, so the robot thinks it has a battery, and also feeds the Jetson&#x27;s barrel jack. A &lt;strong&gt;7.5 A blade fuse&lt;/strong&gt; goes right at the pack, before anything else. A lithium tool battery can deliver a frightening amount of current into a short circuit; the fuse makes sure a pinched wire is a blown fuse, not a fire.&lt;/p&gt;
+
+&lt;figure class=&quot;figure &quot; data-reveal&gt;&lt;a class=&quot;figure__frame&quot; href=&quot;https://brettsbox.com/assets/img/roomba-system-wiring.webp&quot; title=&quot;Open full-size image&quot;&gt;&lt;img src=&quot;https://brettsbox.com/assets/img/roomba-system-wiring.webp&quot; alt=&quot;System wiring diagram: the Ridgid pack feeds a 7.5 amp fuse and a 15 volt, 12 amp buck regulator whose output goes to the Roomba&amp;#x27;s battery contacts and the Jetson&amp;#x27;s barrel jack. A safety box says not to dock or plug in the Roomba charger while running from the Ridgid pack.&quot; width=&quot;1600&quot; height=&quot;1010&quot; loading=&quot;lazy&quot; decoding=&quot;async&quot;&gt;&lt;/a&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 02&lt;/span&gt; Power on the top row, with the optional pack-voltage monitor tapped off after the fuse.&lt;/figcaption&gt;&lt;/figure&gt;
+
+&lt;aside class=&quot;callout callout--warn&quot;&gt;
+  &lt;p class=&quot;callout__title&quot;&gt;Don&#x27;t dock it like this&lt;/p&gt;
+  &lt;p&gt;In this configuration the robot must never go back to its dock or have its charger plugged in. The charger would be pushing current into a regulator output and a lithium pack that it knows nothing about.&lt;/p&gt;
+&lt;/aside&gt;
+
+&lt;h2&gt;The fuel gauge that lied&lt;/h2&gt;
+
+&lt;p&gt;The Roomba estimates its charge by counting the current flowing in and out of its own NiMH pack. Feed it from somewhere else and that number means nothing. During one test drive, on a freshly charged Ridgid pack, it decided it was at &lt;strong&gt;20%&lt;/strong&gt; and headed home to its dock, which is precisely the one thing it mustn&#x27;t do now.&lt;/p&gt;
+
+&lt;p&gt;So the robot&#x27;s own battery percentage is out, and the pack voltage needs to become the source of truth.&lt;/p&gt;
+
+&lt;h2&gt;Measuring the real battery&lt;/h2&gt;
+
+&lt;p&gt;The plan is a pack-voltage monitor that reads the Ridgid pack directly, &lt;em&gt;before&lt;/em&gt; the regulator, so the Jetson can see it actually going flat:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;An &lt;strong&gt;ADS1115&lt;/strong&gt; 16-bit ADC breakout on the Jetson&#x27;s I2C bus, powered from 3.3 V.&lt;/li&gt;
+  &lt;li&gt;A &lt;strong&gt;100 kΩ / 15 kΩ divider&lt;/strong&gt; scales the pack down by about 7.7×: a full 21 V pack reads as 2.74 V, safely inside the ADC&#x27;s ±4.096 V range.&lt;/li&gt;
+  &lt;li&gt;A 100 nF capacitor across the bottom resistor filters out motor noise.&lt;/li&gt;
+  &lt;li&gt;Software warns at 16 V, then stops driving and shuts down cleanly at 15 V, about 3.0 V per cell.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;figure class=&quot;figure &quot; data-reveal&gt;&lt;a class=&quot;figure__frame&quot; href=&quot;https://brettsbox.com/assets/img/ridgid-voltage-monitor.webp&quot; title=&quot;Open full-size image&quot;&gt;&lt;img src=&quot;https://brettsbox.com/assets/img/ridgid-voltage-monitor.webp&quot; alt=&quot;Schematic of the pack voltage monitor: after the 7.5 amp fuse, a 100 kilohm and 15 kilohm divider with a 100 nanofarad capacitor feeds input A0 of an ADS1115 module, which connects to the Jetson Orin Nano&amp;#x27;s 40-pin header for 3.3 volts, SDA, SCL and ground.&quot; width=&quot;1600&quot; height=&quot;1017&quot; loading=&quot;lazy&quot; decoding=&quot;async&quot;&gt;&lt;/a&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 03&lt;/span&gt; The planned monitor. The divider stays at the pack end, so the ADC never sees more than a few volts.&lt;/figcaption&gt;&lt;/figure&gt;
+
+&lt;pre&gt;&lt;code&gt;Vpack = V_A0 × (100k + 15k) / 15k = V_A0 × 7.667
+i2cdetect -y -r 7   # the ADS1115 should answer at 0x48&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;It&#x27;s a stopgap until charging is fixed, but it works, and the pack is looked after by its own proper charger rather than by a robot with a known charging fault.&lt;/p&gt;
+
+
+</content></entry>
+<entry><title>Chasing “Charging Error 3”</title><link href="https://brettsbox.com/lab/blog/charging-error-3/"/><id>https://brettsbox.com/lab/blog/charging-error-3/</id><published>2026-11-11T00:00:00+00:00</published><updated>2026-11-11T00:00:00+00:00</updated><summary>The Roomba refused to charge. A service manual, a reconstructed schematic, a multimeter and two spare chargers later, the fault is cornered but not yet caught.</summary><content type="html">&lt;p&gt;Every robot project has a detour. Mine started when I put the Roomba back on its charger and it refused, reporting &lt;strong&gt;Charging Error 3&lt;/strong&gt;. This post is honest about where it ended: the fault is narrowed down, but not fixed. Yet.&lt;/p&gt;
+
+&lt;h2&gt;What error 3 means&lt;/h2&gt;
+
+&lt;p&gt;The 500-series service manual is short on detail but clear on this one: &lt;strong&gt;error 3 is a failed self-test of the charging MOSFETs&lt;/strong&gt;. When charging starts, the robot briefly switches its charging transistors and checks that they behave. If the result isn&#x27;t what the firmware expects, it gives up and shows error 3.&lt;/p&gt;
+
+&lt;p&gt;That points at a specific part of the board, which is a good start. It doesn&#x27;t tell you which part.&lt;/p&gt;
+
+&lt;h2&gt;Tracing the charge path&lt;/h2&gt;
+
+&lt;p&gt;With no official schematic, I pieced one together from preliminary sketches, photos of the board and the markings on each part. Simplified, the charging current takes this route:&lt;/p&gt;
+
+&lt;figure class=&quot;flow flow--charge&quot; data-reveal&gt;&lt;ol class=&quot;flow__steps&quot;&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;01&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Charger or dock&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Side jack or dock contacts&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;02&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;F2 fuse → D58&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Input protection and a blocking diode&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;03&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Q17 P-channel FET&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;ZXMP6A17G, gate driven by Q20&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;04&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Q18 P-channel FET&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;ZXMP6A17G, gate driven by Q21&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;05&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;NiMH battery&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;14.4 V pack and the robot&#x27;s loads&lt;/span&gt;&lt;/li&gt;&lt;/ol&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 01&lt;/span&gt; The Roomba 550&#x27;s charge path, simplified. Error 3 means the self-test of the two charging MOSFETs failed.&lt;/figcaption&gt;&lt;/figure&gt;
+
+&lt;p&gt;Q17 and Q18 are &lt;strong&gt;ZXMP6A17G&lt;/strong&gt; P-channel MOSFETs, two switches in series between the charger and the battery. A P-channel MOSFET turns &lt;em&gt;on&lt;/em&gt; when its gate is pulled several volts &lt;em&gt;below&lt;/em&gt; its source. Small transistors marked “W2X” (most likely PMBT4401 NPNs: Q20 to Q23), plus a PMBT4403 PNP (Q12), do that pulling under the control of the robot&#x27;s processor and a comparator that watches the charge current.&lt;/p&gt;
+
+&lt;figure class=&quot;figure &quot; data-reveal&gt;&lt;a class=&quot;figure__frame&quot; href=&quot;https://brettsbox.com/assets/img/roomba-charging-block-diagram.webp&quot; title=&quot;Open full-size image&quot;&gt;&lt;img src=&quot;https://brettsbox.com/assets/img/roomba-charging-block-diagram.webp&quot; alt=&quot;Block diagram of the reconstructed Roomba 550 charging circuit. Power path: side charging jack and dock input, filters, fuse F2, diode D58, then P-channel MOSFETs Q17 and Q18 in series to the battery. Gate-driver section: control networks feeding driver transistors Q20 and Q21, which pull the MOSFET gates through 2 kilohm resistors.&quot; width=&quot;1600&quot; height=&quot;1256&quot; loading=&quot;lazy&quot; decoding=&quot;async&quot;&gt;&lt;/a&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 02&lt;/span&gt; My working reconstruction of the charging circuit: the power path on top, the gate drivers below. Not an official schematic.&lt;/figcaption&gt;&lt;/figure&gt;
+
+&lt;figure class=&quot;figure &quot; data-reveal&gt;&lt;a class=&quot;figure__frame&quot; href=&quot;https://brettsbox.com/assets/img/roomba-charging-schematic-full.webp&quot; title=&quot;Open full-size image&quot;&gt;&lt;img src=&quot;https://brettsbox.com/assets/img/roomba-charging-schematic.webp&quot; alt=&quot;Detailed reconstructed schematic of the Roomba 550 R3 board charging path and charge-enable logic, with red test points TP1 to TP11 marked on the MOSFET sources, gates and driver bases.&quot; width=&quot;1800&quot; height=&quot;1025&quot; loading=&quot;lazy&quot; decoding=&quot;async&quot;&gt;&lt;/a&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 03&lt;/span&gt; The same circuit as a schematic, with the test points I probed (TP1 to TP11). Click for the full-resolution version.&lt;/figcaption&gt;&lt;/figure&gt;
+
+&lt;h2&gt;Measuring&lt;/h2&gt;
+
+&lt;p&gt;With everything disconnected, I worked through the parts in the path with a multimeter in diode and resistance mode: the fuse, D58, the body diodes of Q17 and Q18, and each driver transistor&#x27;s junctions. Annotated photos helped me keep track of which leg was which on parts smaller than a grain of rice.&lt;/p&gt;
+
+&lt;div class=&quot;figure-pair&quot;&gt;
+&lt;figure class=&quot;figure &quot; data-reveal&gt;&lt;a class=&quot;figure__frame&quot; href=&quot;https://brettsbox.com/assets/img/roomba-q17-q18.webp&quot; title=&quot;Open full-size image&quot;&gt;&lt;img src=&quot;https://brettsbox.com/assets/img/roomba-q17-q18.webp&quot; alt=&quot;Photo of the Roomba main board with charging MOSFETs Q17 and Q18 highlighted, and an enlarged view of Q18 with its two outer legs labelled A and B and the tab labelled T.&quot; width=&quot;1400&quot; height=&quot;1266&quot; loading=&quot;lazy&quot; decoding=&quot;async&quot;&gt;&lt;/a&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 04&lt;/span&gt; Q17 and Q18 on the board. The labels mark physical legs, not an assumed pinout.&lt;/figcaption&gt;&lt;/figure&gt;
+&lt;figure class=&quot;figure &quot; data-reveal&gt;&lt;a class=&quot;figure__frame&quot; href=&quot;https://brettsbox.com/assets/img/roomba-q20-q21.webp&quot; title=&quot;Open full-size image&quot;&gt;&lt;img src=&quot;https://brettsbox.com/assets/img/roomba-q20-q21.webp&quot; alt=&quot;Close-up of driver transistors Q20 and Q21 below the MOSFETs, each with three test points circled and labelled L, R and T.&quot; width=&quot;1400&quot; height=&quot;1142&quot; loading=&quot;lazy&quot; decoding=&quot;async&quot;&gt;&lt;/a&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 05&lt;/span&gt; The driver transistors Q20 and Q21, ready for diode-mode checks.&lt;/figcaption&gt;&lt;/figure&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Then the live measurements: with the charger connected, I measured the MOSFET gates relative to their sources to see whether the drivers were actually switching them. None of these checks turned up an obviously dead part.&lt;/p&gt;
+
+&lt;h2&gt;Ruling out the easy answers&lt;/h2&gt;
+
+&lt;p&gt;Before blaming the board, I swapped in a &lt;strong&gt;known-good battery&lt;/strong&gt;, then a &lt;strong&gt;second charger&lt;/strong&gt;. Error 3 stayed both times. That rules out the cheap fixes and puts the fault squarely in the robot&#x27;s own charge-control circuitry.&lt;/p&gt;
+
+&lt;h2&gt;Where it stands&lt;/h2&gt;
+
+&lt;p&gt;The self-test lasts a fraction of a second. A multimeter averages over far longer than that, so it simply can&#x27;t see what the gates are doing during the test. The next step is an oscilloscope on the gates and driver bases, triggered on the moment the charger is connected, to catch the self-test in the act.&lt;/p&gt;
+
+&lt;p&gt;Until then, the robot runs on a different power source entirely. That&#x27;s the &lt;a href=&quot;https://brettsbox.com/lab/blog/ridgid-18v-power/&quot;&gt;next post&lt;/a&gt;.&lt;/p&gt;
+
+&lt;aside class=&quot;callout callout--danger&quot;&gt;
+  &lt;p class=&quot;callout__title&quot;&gt;Please don&#x27;t do the “obvious” fix&lt;/p&gt;
+  &lt;p&gt;It&#x27;s tempting to bridge the charging MOSFETs, or to charge the NiMH pack straight from a bench supply. Don&#x27;t. Those FETs are how the robot stops charging when the pack is full; NiMH cells need proper end-of-charge detection, and overcharging them can make them vent or catch fire. Fix the circuit or use a real NiMH charger.&lt;/p&gt;
+&lt;/aside&gt;
+</content></entry>
+<entry><title>Visual SLAM and navigation on a Roomba</title><link href="https://brettsbox.com/lab/blog/visual-slam-navigation/"/><id>https://brettsbox.com/lab/blog/visual-slam-navigation/</id><published>2026-11-10T00:00:00+00:00</published><updated>2026-11-10T00:00:00+00:00</updated><summary>From a stereo camera to a robot that explores rooms on its own: Basalt visual-inertial odometry, RTAB-Map, Nav2 and a web dashboard, plus five things that bit me along the way.</summary><content type="html">&lt;p&gt;This is the post where the Roomba stops being a remote-control car and starts finding its own way around. Here&#x27;s where it ended up: I press &lt;em&gt;Explore &amp;amp; map&lt;/em&gt;, and it drives off into rooms it has never seen, building a map as it goes.&lt;/p&gt;
+
+&lt;figure&gt;&lt;a href=&quot;https://brettsbox.com/assets/media/vslam-demo.mp4&quot;&gt;&lt;img src=&quot;https://brettsbox.com/assets/media/vslam-demo-poster.jpg&quot; alt=&quot;Screen recording of the Roomba&amp;#x27;s web dashboard while it explores on its own: a grey-scale camera view on the left, and on the right a top-down map that grows as the robot drives, with its planned path drawn in purple and obstacles in red.&quot; width=&quot;1280&quot; height=&quot;960&quot;&gt;&lt;/a&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 01&lt;/span&gt; The robot exploring on its own. Left: what the camera sees. Right: the map it builds as it goes, with the planned path in purple and obstacles in red.&lt;/figcaption&gt;&lt;/figure&gt;
+
+&lt;h2&gt;The pipeline&lt;/h2&gt;
+
+&lt;p&gt;Robot navigation is a relay race. Each stage takes the previous one&#x27;s output, adds something, and hands it on:&lt;/p&gt;
+
+&lt;figure class=&quot;flow flow--pipeline&quot; data-reveal&gt;&lt;ol class=&quot;flow__steps&quot;&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;01&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Stereo camera&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;MYNT EYE D1000: stereo pair, IR depth and a built-in IMU&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;02&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Visual odometry&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Basalt on the CPU, or NVIDIA cuVSLAM on the GPU&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;03&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Sensor fusion&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Wheel odometry and gyro bridge the gaps when vision loses track&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;04&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;RTAB-Map&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Builds the map and snaps it straight with loop closures&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;05&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Nav2&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Costmaps, path planning and Regulated Pure Pursuit control&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;06&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Collision monitor&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Last line of defence: slows or stops before contact&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;07&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Roomba driver&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;My ROS 2 node speaking the Open Interface over serial&lt;/span&gt;&lt;/li&gt;&lt;/ol&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 02&lt;/span&gt; The navigation pipeline, from photons to wheel commands.&lt;/figcaption&gt;&lt;/figure&gt;
+
+&lt;h3&gt;1. Where am I moving? Visual-inertial odometry&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://gitlab.com/VladyslavUsenko/basalt&quot;&gt;Basalt&lt;/a&gt; watches features in the stereo images, combines them with the camera&#x27;s IMU, and estimates how the camera has moved, many times a second. It runs on the Jetson&#x27;s CPU. It&#x27;s impressively accurate until the camera stares at a blank wall or gets dazzled by a window, and then it loses track.&lt;/p&gt;
+
+&lt;h3&gt;2. Bridging the gaps&lt;/h3&gt;
+
+&lt;p&gt;So between Basalt and everything else sits a small watchdog node I wrote. While vision is healthy it passes the motion through. When tracking drops out, it bridges the gap with wheel odometry and the gyro, then hands back to vision once tracking recovers. The rest of the system never sees a jump.&lt;/p&gt;
+
+&lt;h3&gt;3. The map: RTAB-Map&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://introlab.github.io/rtabmap/&quot;&gt;RTAB-Map&lt;/a&gt; takes that motion plus the depth images and builds the map. Its party trick is &lt;em&gt;loop closure&lt;/em&gt;: when the robot comes back to somewhere it has been before and recognises it, RTAB-Map corrects all the drift that built up along the way and snaps the map straight.&lt;/p&gt;
+
+&lt;h3&gt;4. Getting somewhere: Nav2&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://docs.nav2.org/&quot;&gt;Nav2&lt;/a&gt; turns the map into &lt;em&gt;costmaps&lt;/em&gt; (where it&#x27;s safe to drive and where it isn&#x27;t), plans a path, and follows it with the Regulated Pure Pursuit controller, which slows down for tight turns and near obstacles. A collision monitor sits at the very end of the chain and will slow or stop the robot if anything gets too close, whatever the planner wants.&lt;/p&gt;
+
+&lt;h3&gt;5. The dashboard&lt;/h3&gt;
+
+&lt;p&gt;On top sits a small web app I can open on my phone: the live map, the camera feed, a drive pad, &lt;em&gt;tap-to-go&lt;/em&gt; (tap a spot on the map and the robot plans its way there) and &lt;em&gt;Explore &amp;amp; map&lt;/em&gt;, which hunts for &lt;em&gt;frontiers&lt;/em&gt;, the edges between known and unknown space, and drives to them one by one until there&#x27;s nothing left to discover.&lt;/p&gt;
+
+&lt;h2&gt;Five things that bit me&lt;/h2&gt;
+
+&lt;ol class=&quot;lessons&quot;&gt;
+  &lt;li&gt;
+    &lt;strong&gt;Sending Start drops you back to Passive.&lt;/strong&gt;
+    The OI&#x27;s Start command (128) puts the robot in Passive mode, even if it was already in Safe mode. My driver re-sent Start when it reconnected, and the robot quietly stopped accepting drive commands. Now every Start is followed by the mode I actually want.
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;strong&gt;One of my bumpers was lying.&lt;/strong&gt;
+    A stuck bumper switch reported a permanent collision, so the bump stop never let go. The driver can now be told to ignore a specific faulty sensor, rather than me ignoring safety altogether.
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;strong&gt;Nav2&#x27;s velocity polygons have to cover everything.&lt;/strong&gt;
+    In Nav2 Jazzy, the collision monitor&#x27;s velocity polygons let you use a different safety zone at different speeds. Every combination of forward and turning speed the controller can command has to fall inside one of them. Leave a gap and the monitor misbehaves at exactly those speeds.
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;strong&gt;Wheels lie on carpet.&lt;/strong&gt;
+    Turning on the spot, the wheel encoders claimed about 40% more rotation than actually happened: the wheels scrub sideways on carpet. The gyro and the visual odometry agreed with each other, so for rotation, they win.
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;strong&gt;Don&#x27;t chase frontiers you can&#x27;t reach.&lt;/strong&gt;
+    The explorer kept choosing frontiers it could &lt;em&gt;see&lt;/em&gt; through gaps, under furniture or between railings, but couldn&#x27;t drive to. Goals now stop short of the frontier, in clear space the robot can actually reach.
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;aside class=&quot;callout&quot;&gt;
+  &lt;p class=&quot;callout__title&quot;&gt;Belt, braces and a bumper&lt;/p&gt;
+  &lt;p&gt;Stairs and furniture don&#x27;t forgive mistakes. The Roomba&#x27;s own cliff sensors stay active in Safe mode, the collision monitor watches the depth camera, and the bump stop is the last resort. Three layers, because any one of them can be wrong.&lt;/p&gt;
+&lt;/aside&gt;
+
+&lt;p&gt;Next: an unexpected detour into the Roomba&#x27;s charging circuit, in &lt;a href=&quot;https://brettsbox.com/lab/blog/charging-error-3/&quot;&gt;chasing Charging Error 3&lt;/a&gt;.&lt;/p&gt;
+</content></entry>
+<entry><title>Talking to the Roomba: serial wiring and a ROS 2 driver</title><link href="https://brettsbox.com/lab/blog/serial-wiring-ros2-driver/"/><id>https://brettsbox.com/lab/blog/serial-wiring-ros2-driver/</id><published>2026-11-08T00:00:00+00:00</published><updated>2026-11-08T00:00:00+00:00</updated><summary>The Roomba&#x27;s 7-pin Mini-DIN port, why my first level-shifter wiring was flaky, the 5 V FT232 adapter that fixed it, and the open-source ROS 2 driver I wrote on top.</summary><content type="html">&lt;p&gt;The ESP32 proved the Roomba would listen. Now the Jetson needed to hold a conversation with it for hours at a time, at full speed, without dropping a byte. That turned out to be harder than it sounds.&lt;/p&gt;
+
+&lt;h2&gt;The port&lt;/h2&gt;
+
+&lt;p&gt;The Open Interface lives on a 7-pin Mini-DIN socket under the Roomba&#x27;s faceplate. Looking at the pins, this is what each one does:&lt;/p&gt;
+
+&lt;div class=&quot;table-wrap&quot;&gt;
+&lt;table&gt;
+  &lt;thead&gt;&lt;tr&gt;&lt;th scope=&quot;col&quot;&gt;Pin&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;Name&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;What it does&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;&lt;td&gt;1, 2&lt;/td&gt;&lt;td&gt;Vpwr&lt;/td&gt;&lt;td&gt;Battery positive, unregulated (around 14–17 V). &lt;strong&gt;Do not connect.&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;3&lt;/td&gt;&lt;td&gt;RXD&lt;/td&gt;&lt;td&gt;Serial data &lt;em&gt;into&lt;/em&gt; the Roomba (0–5 V)&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;4&lt;/td&gt;&lt;td&gt;TXD&lt;/td&gt;&lt;td&gt;Serial data &lt;em&gt;out of&lt;/em&gt; the Roomba (0–5 V)&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;5&lt;/td&gt;&lt;td&gt;BRC&lt;/td&gt;&lt;td&gt;Baud rate change / wake-up input&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;6, 7&lt;/td&gt;&lt;td&gt;GND&lt;/td&gt;&lt;td&gt;Ground&lt;/td&gt;&lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+
+&lt;aside class=&quot;callout callout--danger&quot;&gt;
+  &lt;p class=&quot;callout__title&quot;&gt;Never connect pins 1 or 2 to your adapter&lt;/p&gt;
+  &lt;p&gt;They carry raw battery voltage. A USB-serial adapter expects 5 V at most; 15-plus volts will destroy it, and possibly the USB port it&#x27;s plugged into. Wire only RXD, TXD and ground (and BRC if you need it).&lt;/p&gt;
+&lt;/aside&gt;
+
+&lt;h2&gt;Attempt one: the Jetson&#x27;s own UART&lt;/h2&gt;
+
+&lt;p&gt;The Jetson has a hardware serial port on its 40-pin header, so the obvious plan was to use it. It runs at 3.3 V and the Roomba talks at 5 V, so I put a common BSS138 level-shifter board in between.&lt;/p&gt;
+
+&lt;p&gt;It &lt;em&gt;mostly&lt;/em&gt; worked, which is the worst kind of working. Sensor packets would occasionally arrive corrupted, commands sometimes went missing, and the driver had to resynchronise on the data stream far too often. These bidirectional shifter boards rely on pull-up resistors to make their rising edges, and those soft edges are a known weak spot at 115200 baud. Rather than fight it, I changed the approach.&lt;/p&gt;
+
+&lt;h2&gt;Attempt two: a 5 V FT232 adapter&lt;/h2&gt;
+
+&lt;p&gt;An FT232 USB-to-TTL adapter with its voltage jumper set to &lt;strong&gt;5 V&lt;/strong&gt; speaks the Roomba&#x27;s levels natively, so there&#x27;s no level shifting at all. Plug it into the Jetson&#x27;s USB port, connect TXD to the Roomba&#x27;s RXD, RXD to TXD, and ground to ground, and talk at &lt;strong&gt;115200 baud, 8N1&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;It has been rock solid ever since: hours of streaming sensors and drive commands without a single framing error.&lt;/p&gt;
+
+&lt;figure class=&quot;figure &quot; data-reveal&gt;&lt;a class=&quot;figure__frame&quot; href=&quot;https://brettsbox.com/assets/img/roomba-system-wiring.webp&quot; title=&quot;Open full-size image&quot;&gt;&lt;img src=&quot;https://brettsbox.com/assets/img/roomba-system-wiring.webp&quot; alt=&quot;Wiring diagram: a Ridgid 18 volt pack through a 7.5 amp fuse and 15 volt regulator powers the Roomba and the Jetson; the MYNT EYE camera connects to the Jetson over USB 3; an FT232 adapter set to 5 volts links the Jetson&amp;#x27;s USB to Mini-DIN pins 3, 4 and 6. Pins 1 and 2 are marked do not connect.&quot; width=&quot;1600&quot; height=&quot;1010&quot; loading=&quot;lazy&quot; decoding=&quot;async&quot;&gt;&lt;/a&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 01&lt;/span&gt; The full system wiring. The serial link is on the right: FT232 TXD to pin 3, RXD to pin 4, ground to pin 6.&lt;/figcaption&gt;&lt;/figure&gt;
+
+&lt;h2&gt;A ROS 2 driver&lt;/h2&gt;
+
+&lt;p&gt;With a reliable link, I wrote a proper ROS 2 Jazzy driver and open-sourced it as &lt;a href=&quot;https://github.com/Brett-D/roomba-serial-ros2&quot;&gt;roomba-serial-ros2&lt;/a&gt;. It does the boring-but-essential work so the rest of the robot doesn&#x27;t have to know it&#x27;s talking to a vacuum:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Drive&lt;/strong&gt;: takes standard velocity commands and turns them into the Roomba&#x27;s wheel-speed packets.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Odometry&lt;/strong&gt;: reads the wheel encoder counts and publishes where the robot thinks it has moved.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Sensors and battery&lt;/strong&gt;: bumpers, cliffs, wheel drops, voltage, current, charge and temperature, all as ROS topics. It also exposes the fun stuff: brushes, LEDs, the 4-digit display, songs and the dock button.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Safe and Full modes&lt;/strong&gt;: it starts in Safe mode, which keeps the Roomba&#x27;s own cliff protection active; Full mode hands over complete control when you really need it. On exit it hands the robot back in Passive mode.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Bump stop and a command watchdog&lt;/strong&gt;: if a bumper triggers, or commands stop arriving, or the serial link drops, the wheels stop.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;25 unit tests&lt;/strong&gt;: packet parsing, encoder wrap-around and mode handling are tested without needing a robot on the desk.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;pre&gt;&lt;code&gt;$ ros2 launch roomba_driver roomba_driver.launch.py
+$ ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist &quot;{linear: {x: 0.1}}&quot;
+# Ctrl-C and the robot stops within half a second: no commands, no driving
+$ ros2 topic echo /roomba/sensors&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2&gt;Things the manual doesn&#x27;t tell you&lt;/h2&gt;
+
+&lt;p&gt;A few findings from the real robot, all written up in the repository&#x27;s troubleshooting notes:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;115200 baud&lt;/strong&gt;, not 57600. The older SCI manual you&#x27;ll find online is for pre-500 robots.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Safe mode is refused while the robot is lifted or sitting on its charger&lt;/strong&gt;, and every motor command then earns you error beeps. Put it on the floor.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;In Passive mode it falls asleep after five minutes&lt;/strong&gt;, and streaming sensors doesn&#x27;t keep it awake. Wiring the adapter&#x27;s DTR line to BRC (pin 5) lets software wake it.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Trust the wheel encoders&lt;/strong&gt; (packets 43 and 44). The firmware&#x27;s own distance and angle packets were not reliable.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Don&#x27;t stream everything at once.&lt;/strong&gt; The full 84-byte sensor frame gave bad checksums in Safe mode; frames of 70 bytes or less are clean.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The repository also has the wiring diagrams, an Open Interface reference, and a small command-line tool for poking the robot without ROS at all. It&#x27;s Apache-2.0 licensed, so help yourself if you have a 500-series Roomba of your own.&lt;/p&gt;
+
+&lt;p&gt;Next: &lt;a href=&quot;https://brettsbox.com/lab/blog/visual-slam-navigation/&quot;&gt;giving it eyes, a map, and somewhere to go&lt;/a&gt;.&lt;/p&gt;
+</content></entry>
+<entry><title>Bringing a 2007-era Roomba 550 back as a robot platform</title><link href="https://brettsbox.com/lab/blog/roomba-550-robot-platform/"/><id>https://brettsbox.com/lab/blog/roomba-550-robot-platform/</id><published>2026-11-02T00:00:00+00:00</published><updated>2026-11-02T00:00:00+00:00</updated><summary>An old Roomba, an ESP32 and a published serial protocol: how a closet vacuum became the base for a mapping robot with a Jetson and a stereo camera.</summary><content type="html">&lt;p&gt;My Roomba 550 is old enough to have its own nostalgia. It came out around 2007, it navigates by bumping into things, and for the last few years it has mostly lived in a closet. But it has one feature that makes it far more interesting than a newer robot vacuum: &lt;strong&gt;you can talk to it&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;iRobot published the &lt;em&gt;Roomba Open Interface&lt;/em&gt; (OI) for the 500 series. It&#x27;s a simple serial protocol on a round port hidden under the top cover. Send it a few bytes and it will drive both wheels at any speed you like, play tones, run the brushes, and report every sensor it has: bumpers, cliff sensors, wheel drops, wheel encoder counts, the wall sensor, battery voltage, current and temperature. Underneath the vacuum is a perfectly good differential-drive robot base with a battery, motors and bump sensors, already paid for.&lt;/p&gt;
+
+&lt;h2&gt;Step one: is it alive?&lt;/h2&gt;
+
+&lt;p&gt;Before buying anything, I wanted proof that the robot would listen. An ESP32 was the quickest way to find out. A handful of lines of code later it was sending the OI start sequence, driving the Roomba forward, spinning it on the spot and printing sensor packets back to my laptop. Seeing a vacuum from 2007 obey a microcontroller is a very good feeling.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# the first bytes that made it move
+128          Start: open the Open Interface
+131          Safe mode: I drive, the cliff sensors still protect it
+145 0 200 0 200   Drive Direct: right and left wheel at 200 mm/s&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;An ESP32 can drive a robot, though, and that&#x27;s about it. It can&#x27;t see. If I wanted the Roomba to know where it was, I needed real compute and real eyes.&lt;/p&gt;
+
+&lt;h2&gt;The upgrade&lt;/h2&gt;
+
+&lt;p&gt;Here&#x27;s the hardware it carries now:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;NVIDIA Jetson Orin Nano Super (8 GB)&lt;/strong&gt;: a small Linux computer with a capable GPU, perfect for running computer vision on a robot&#x27;s battery budget.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;MYNT EYE D1000 stereo camera&lt;/strong&gt;: two cameras for depth, an IR projector for blank walls, and a built-in IMU (gyro and accelerometer).&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;ROS 2 Jazzy&lt;/strong&gt;: the Robot Operating System, which wires sensors, maps, planners and motors together as small cooperating programs.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;A 3D-printed platform&lt;/strong&gt; that bolts onto the top of the Roomba to carry the camera, the Jetson and the battery, while keeping the CLEAN button and the serial port reachable.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;figure class=&quot;figure &quot; data-reveal&gt;&lt;a class=&quot;figure__frame&quot; href=&quot;https://brettsbox.com/assets/img/roomba-platform-assembly.webp&quot; title=&quot;Open full-size image&quot;&gt;&lt;img src=&quot;https://brettsbox.com/assets/img/roomba-platform-assembly.webp&quot; alt=&quot;Four-panel CAD render of the 3D-printed platform: assembled on the Roomba, an exploded view of legs, frame, cradle and camera case, a top view showing where the battery, Jetson and camera sit, and a side section.&quot; width=&quot;1540&quot; height=&quot;1120&quot; loading=&quot;lazy&quot; decoding=&quot;async&quot;&gt;&lt;/a&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 01&lt;/span&gt; The printed platform, generated from Python. The camera sits up front; the Jetson and battery ride on either side of the CLEAN button.&lt;/figcaption&gt;&lt;/figure&gt;
+
+&lt;h2&gt;The goal&lt;/h2&gt;
+
+&lt;p&gt;I want a robot that can:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Map the house on its own&lt;/strong&gt; using visual SLAM (simultaneous localisation and mapping): working out where it is from what the camera sees, while building the map at the same time.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Avoid obstacles it can see&lt;/strong&gt;, rather than finding them with its bumper.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Become a smarter vacuum&lt;/strong&gt;: clean the rooms I pick, in a sensible order, and know when it&#x27;s done.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;None of this needs a new robot. It needs some wiring, a lot of software, and patience. The rest of this build log is that story, mistakes included.&lt;/p&gt;
+
+
+
+&lt;p&gt;Next up: &lt;a href=&quot;https://brettsbox.com/lab/blog/serial-wiring-ros2-driver/&quot;&gt;getting a reliable serial link and writing a proper ROS 2 driver&lt;/a&gt;.&lt;/p&gt;
+</content></entry>
+</feed>

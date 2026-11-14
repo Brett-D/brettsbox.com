@@ -1,0 +1,131 @@
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero__bg" aria-hidden="true">
+    <div class="hero__glow hero__glow--a"></div>
+    <div class="hero__glow hero__glow--b"></div>
+    <div class="hero__grid"></div>
+  </div>
+  <div class="wrap hero__inner">
+    <div class="hero__copy">
+      <p class="eyebrow"><span class="eyebrow__dot" aria-hidden="true"></span>A maker's lab notebook</p>
+      <h1 class="hero__title" id="hero-title"><span class="hero__line">Brett's</span> <span class="hero__line hero__line--grad">Box.</span></h1>
+      <p class="hero__tagline">{{tagline}}</p>
+      <p class="hero__intro">{{intro}}</p>
+      <div class="hero__actions">
+        <a class="btn btn--primary" href="{{base}}/roomba/">Follow the robot build <span aria-hidden="true">→</span></a>
+        <a class="btn btn--ghost" href="{{base}}/blog/">Read the build log</a>
+      </div>
+    </div>
+    <div class="hero__map">
+      <div class="hud">
+        <div class="hud__bar" aria-hidden="true"><span class="hud__live">Live map</span><span class="hud__coords">frontier exploration</span></div>
+        <svg class="map" viewBox="0 0 600 460" role="img" aria-labelledby="map-title">
+          <title id="map-title">Stylised top-down map: a small round robot drives along a path through rooms, building a map as it goes.</title>
+          <defs>
+            <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#2a3a5c"/></pattern>
+            <linearGradient id="trail" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2de2ff"/><stop offset=".5" stop-color="#8b6cff"/><stop offset="1" stop-color="#ff4fa3"/></linearGradient>
+            <radialGradient id="fov" cx="0" cy="0.5" r="1"><stop offset="0" stop-color="#2de2ff" stop-opacity=".55"/><stop offset="1" stop-color="#2de2ff" stop-opacity="0"/></radialGradient>
+          </defs>
+          <rect width="600" height="460" fill="url(#dots)"/>
+          <g class="map__floor">
+            <path d="M40 60 H300 V200 H360 V60 H560 V250 H430 V400 H200 V300 H40 Z"/>
+          </g>
+          <g class="map__walls">
+            <path d="M40 60 H300 M360 60 H560 V250 H430 V400 H200 V300 H40 V60"/>
+            <path d="M300 60 V140 M300 175 V200 H360 V60"/>
+            <path d="M200 300 H270 M320 300 H430"/>
+            <path d="M560 160 H470"/>
+          </g>
+          <g class="map__obstacles">
+            <rect x="96" y="120" width="54" height="34" rx="4"/>
+            <rect x="470" y="94" width="40" height="40" rx="20"/>
+            <rect x="248" y="338" width="70" height="22" rx="4"/>
+          </g>
+          <g class="map__frontiers">
+            <circle cx="560" cy="205" r="6"/>
+            <circle cx="430" cy="330" r="6"/>
+            <circle cx="40" cy="250" r="6"/>
+          </g>
+          <path class="map__plan" id="robot-path" d="M90 250 C 150 260, 200 220, 230 170 S 300 110, 330 150 S 380 230, 420 200 S 520 120, 510 190 S 440 260, 380 330 S 270 380, 230 340 S 140 300, 90 250 Z"/>
+          <path class="map__trail" d="M90 250 C 150 260, 200 220, 230 170 S 300 110, 330 150 S 380 230, 420 200 S 520 120, 510 190 S 440 260, 380 330 S 270 380, 230 340 S 140 300, 90 250 Z" pathLength="1"/>
+          <g class="map__robot">
+            <path d="M0 0 L120 -60 A 134 134 0 0 1 120 60 Z" fill="url(#fov)" class="map__fov"/>
+            <circle r="16" class="map__body"/>
+            <path d="M4 -7 L14 0 L4 7" class="map__heading"/>
+            <animateMotion dur="16s" repeatCount="indefinite" rotate="auto"><mpath href="#robot-path"/></animateMotion>
+          </g>
+          <g class="map__static-robot" transform="translate(330 150) rotate(40)">
+            <path d="M0 0 L120 -60 A 134 134 0 0 1 120 60 Z" fill="url(#fov)"/>
+            <circle r="16" class="map__body"/>
+          </g>
+          <g class="map__labels" font-size="13">
+            <text x="478" y="222">frontier</text>
+            <text x="60" y="88">loop closure ✓</text>
+          </g>
+        </svg>
+        <div class="hud__foot" aria-hidden="true"><span>VIO <b class="ok">tracking</b></span><span>Nav2 <b class="ok">active</b></span><span>Pack <b>15.0 V</b></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="wrap">
+    <ul class="ticker" aria-label="Project vitals">
+      <li><span class="ticker__num" data-count="{{post_count}}">{{post_count}}</span><span class="ticker__label">build-log posts so far</span></li>
+      <li><span class="ticker__num">2007</span><span class="ticker__label">year the Roomba was new</span></li>
+      <li><span class="ticker__num">0.3<small>cm</small></span><span class="ticker__label">parked drift in 60 s on the GPU</span></li>
+      <li><span class="ticker__num">0</span><span class="ticker__label">open ports for this website</span></li>
+    </ul>
+  </div>
+</section>
+
+<section class="feature" aria-labelledby="feature-title">
+  <div class="wrap feature__inner">
+    <div class="feature__media">
+      <div class="monitor">
+        <div class="monitor__bar" aria-hidden="true"><i></i><i></i><i></i><span>roomba · dashboard</span></div>
+        {{featured_video}}
+      </div>
+    </div>
+    <div class="feature__copy" data-reveal>
+      <p class="kicker">Featured project · PRJ-01</p>
+      <h2 class="feature__title" id="feature-title">A 2007 Roomba that maps the house <em>by itself</em>.</h2>
+      <p>{{featured_summary}}</p>
+      <ul class="pills" aria-label="Current status">{{status_pills}}</ul>
+      <p class="feature__links">
+        <a class="btn btn--primary" href="{{base}}/roomba/">Project page <span aria-hidden="true">→</span></a>
+        <a class="link-arrow" href="{{newest_href}}">Latest: {{newest_title}}</a>
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="block" aria-labelledby="latest-title">
+  <div class="wrap">
+    <div class="block__head" data-reveal>
+      <p class="kicker">Build log</p>
+      <h2 class="block__title" id="latest-title">Fresh off the bench</h2>
+      <a class="link-arrow" href="{{base}}/blog/">All {{post_count}} posts</a>
+    </div>
+    {{latest_posts}}
+  </div>
+</section>
+
+<section class="block block--projects" aria-labelledby="projects-title">
+  <div class="wrap">
+    <div class="block__head" data-reveal>
+      <p class="kicker">Projects</p>
+      <h2 class="block__title" id="projects-title">Three rabbit holes, one notebook</h2>
+    </div>
+    <div class="project-grid">
+{{project_cards}}
+    </div>
+  </div>
+</section>
+
+<section class="block block--now" aria-labelledby="now-title">
+  <div class="wrap now" data-reveal>
+    <div>
+      <p class="kicker">Now</p>
+      <h2 class="block__title" id="now-title">On the bench this week</h2>
+    </div>
+    <ul class="now__list">{{now_items}}</ul>
+  </div>
+</section>

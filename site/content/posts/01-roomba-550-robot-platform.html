@@ -1,0 +1,51 @@
+---
+title: Bringing a 2007-era Roomba 550 back as a robot platform
+slug: roomba-550-robot-platform
+date: 2026-11-02
+tags: roomba, hardware, ros2
+summary: An old Roomba, an ESP32 and a published serial protocol: how a closet vacuum became the base for a mapping robot with a Jetson and a stereo camera.
+image: /assets/img/roomba-platform-assembly.webp
+---
+<p>My Roomba 550 is old enough to have its own nostalgia. It came out around 2007, it navigates by bumping into things, and for the last few years it has mostly lived in a closet. But it has one feature that makes it far more interesting than a newer robot vacuum: <strong>you can talk to it</strong>.</p>
+
+<p>iRobot published the <em>Roomba Open Interface</em> (OI) for the 500 series. It's a simple serial protocol on a round port hidden under the top cover. Send it a few bytes and it will drive both wheels at any speed you like, play tones, run the brushes, and report every sensor it has: bumpers, cliff sensors, wheel drops, wheel encoder counts, the wall sensor, battery voltage, current and temperature. Underneath the vacuum is a perfectly good differential-drive robot base with a battery, motors and bump sensors, already paid for.</p>
+
+<h2>Step one: is it alive?</h2>
+
+<p>Before buying anything, I wanted proof that the robot would listen. An ESP32 was the quickest way to find out. A handful of lines of code later it was sending the OI start sequence, driving the Roomba forward, spinning it on the spot and printing sensor packets back to my laptop. Seeing a vacuum from 2007 obey a microcontroller is a very good feeling.</p>
+
+<pre><code># the first bytes that made it move
+128          Start: open the Open Interface
+131          Safe mode: I drive, the cliff sensors still protect it
+145 0 200 0 200   Drive Direct: right and left wheel at 200 mm/s</code></pre>
+
+<p>An ESP32 can drive a robot, though, and that's about it. It can't see. If I wanted the Roomba to know where it was, I needed real compute and real eyes.</p>
+
+<h2>The upgrade</h2>
+
+<p>Here's the hardware it carries now:</p>
+
+<ul>
+  <li><strong>NVIDIA Jetson Orin Nano Super (8 GB)</strong>: a small Linux computer with a capable GPU, perfect for running computer vision on a robot's battery budget.</li>
+  <li><strong>MYNT EYE D1000 stereo camera</strong>: two cameras for depth, an IR projector for blank walls, and a built-in IMU (gyro and accelerometer).</li>
+  <li><strong>ROS 2 Jazzy</strong>: the Robot Operating System, which wires sensors, maps, planners and motors together as small cooperating programs.</li>
+  <li><strong>A 3D-printed platform</strong> that bolts onto the top of the Roomba to carry the camera, the Jetson and the battery, while keeping the CLEAN button and the serial port reachable.</li>
+</ul>
+
+{{img:roomba-platform-assembly.webp|Four-panel CAD render of the 3D-printed platform: assembled on the Roomba, an exploded view of legs, frame, cradle and camera case, a top view showing where the battery, Jetson and camera sit, and a side section.|The printed platform, generated from Python. The camera sits up front; the Jetson and battery ride on either side of the CLEAN button.}}
+
+<h2>The goal</h2>
+
+<p>I want a robot that can:</p>
+
+<ol>
+  <li><strong>Map the house on its own</strong> using visual SLAM (simultaneous localisation and mapping): working out where it is from what the camera sees, while building the map at the same time.</li>
+  <li><strong>Avoid obstacles it can see</strong>, rather than finding them with its bumper.</li>
+  <li><strong>Become a smarter vacuum</strong>: clean the rooms I pick, in a sensible order, and know when it's done.</li>
+</ol>
+
+<p>None of this needs a new robot. It needs some wiring, a lot of software, and patience. The rest of this build log is that story, mistakes included.</p>
+
+{{soon:The Roomba 550 with the printed platform, Jetson and camera on board.}}
+
+<p>Next up: <a href="{{base}}/blog/serial-wiring-ros2-driver/">getting a reliable serial link and writing a proper ROS 2 driver</a>.</p>

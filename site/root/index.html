@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brett's Box · Pick a design</title>
+<meta name="description" content="Brett's Box is a maker's lab notebook about robots, a homelab and 3D printing. Two designs are on trial: pick one to explore.">
+<link rel="canonical" href="https://brettsbox.com/">
+<meta property="og:site_name" content="Brett's Box">
+<meta property="og:title" content="Brett's Box · Pick a design">
+<meta property="og:description" content="A maker's lab notebook about robots, a homelab and 3D printing. Two designs are on trial: pick one to explore.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://brettsbox.com/">
+<meta property="og:image" content="https://brettsbox.com/assets/img/og-lab.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#f4f4f2">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  :root { color-scheme: light dark; --bg: #f4f4f2; --card: #fff; --text: #1b1c1f; --muted: #5b5e66; --line: #dcdcd8; --focus: #2563eb; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #16181d; --card: #1e2128; --text: #eceef2; --muted: #a5aab5; --line: #2e323b; --focus: #7aa7ff; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; display: grid; place-items: center; }
+  main { width: min(100% - 2.5rem, 1040px); padding: 3.5rem 0; }
+  h1 { font-size: clamp(2.2rem, 6vw, 3.4rem); line-height: 1.05; letter-spacing: -0.03em; margin: 0 0 0.6rem; }
+  .lede { color: var(--muted); max-width: 60ch; margin: 0 0 2.5rem; font-size: 1.1rem; }
+  .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+  .choice { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; color: inherit; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; }
+  .choice:hover { transform: translateY(-4px); box-shadow: 0 18px 40px -20px rgb(0 0 0 / 0.35); }
+  .choice:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .choice img { width: 100%; height: auto; display: block; border-bottom: 1px solid var(--line); aspect-ratio: 1440 / 900; object-fit: cover; object-position: top; }
+  .choice div { padding: 1.2rem 1.4rem 1.4rem; }
+  .choice h2 { margin: 0 0 0.3rem; font-size: 1.4rem; letter-spacing: -0.01em; }
+  .choice p { margin: 0; color: var(--muted); }
+  .choice .go { display: inline-block; margin-top: 0.9rem; font-weight: 600; color: var(--text); }
+  footer { margin-top: 2.5rem; color: var(--muted); font-size: 0.9rem; }
+  footer a { color: inherit; }
+  @media (prefers-reduced-motion: reduce) { .choice { transition: none; } .choice:hover { transform: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Brett's Box</h1>
+  <p class="lede">A maker's lab notebook: an old Roomba turned into a mapping robot, a self-hosted homelab, and 3D printing. Two designs are on trial, with exactly the same pages and posts. Pick one to explore.</p>
+  <div class="choices">
+    <a class="choice" href="/lab/">
+      <img src="/assets/img/preview-lab.webp" width="1440" height="900" alt="Preview of the Lab design: a dark dashboard look with huge gradient type and an animated robot map.">
+      <div>
+        <h2>Lab</h2>
+        <p>Dark technical lab notebook with bold type, bright colour and motion.</p>
+        <span class="go">Open the Lab design →</span>
+      </div>
+    </a>
+    <a class="choice" href="/blueprint/">
+      <img src="/assets/img/preview-blueprint.webp" width="1440" height="900" alt="Preview of the Blueprint design: blueprint-blue grid paper, monospace type, a terminal window and a technical drawing of the Roomba.">
+      <div>
+        <h2>Blueprint</h2>
+        <p>Retro terminal meets engineering drawing: grid paper, line work and monospace.</p>
+        <span class="go">Open the Blueprint design →</span>
+      </div>
+    </a>
+  </div>
+  <footer>Hand-built and self-hosted. Code on <a href="https://github.com/Brett-D">GitHub</a>.</footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap hero__inner">
+    <div class="hero__copy">
+      <p class="label">SHEET 00 / INDEX · REV A</p>
+      <h1 class="hero__title" id="hero-title">Brett<span class="apos">'</span>s<br>Box<span class="cursor" aria-hidden="true"></span></h1>
+      <div class="dim" aria-hidden="true"><span>robots + homelab + 3d printing</span></div>
+      <div class="term" role="group" aria-label="Introduction">
+        <div class="term__bar" aria-hidden="true"><span>tty1</span><span>brett@brettsbox: ~</span></div>
+        <div class="term__body">
+          <p class="term__cmd"><span class="term__ps1">brett@brettsbox:~$</span> <span class="type" style="--n: 6">whoami</span></p>
+          <p class="term__out o1">Brett: maker, tinkerer, robot wrangler.</p>
+          <p class="term__cmd c2"><span class="term__ps1">brett@brettsbox:~$</span> <span class="type" style="--n: 10">cat README</span></p>
+          <p class="term__out o2"><strong>{{tagline}}</strong></p>
+          <p class="term__out o2">{{intro}}</p>
+          <p class="term__cmd c3"><span class="term__ps1">brett@brettsbox:~$</span> <span class="type" style="--n: 12">ls projects/</span></p>
+          <p class="term__out o3 term__ls"><a href="{{base}}/roomba/">roomba/</a> <a href="{{base}}/homelab/">homelab/</a> <a href="{{base}}/printing/">printing/</a> <a href="{{base}}/blog/">build-log/</a></p>
+          <p class="term__cmd c4"><span class="term__ps1">brett@brettsbox:~$</span> <span class="cursor" aria-hidden="true"></span></p>
+        </div>
+      </div>
+    </div>
+    <figure class="hero__drawing">
+      <svg class="drawing" viewBox="0 0 640 540" role="img" aria-labelledby="dwg-title">
+        <title id="dwg-title">Technical drawing of the Roomba 550 from above, 340 millimetres across, showing where the stereo camera, Jetson, battery, CLEAN button and serial port sit on the printed platform.</title>
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 1 L10 5 L0 9 Z" fill="currentColor"/></marker>
+        </defs>
+        <g class="dwg-center">
+          <path d="M320 64 V456 M124 260 H516"/>
+        </g>
+        <g class="dwg-hidden">
+          <rect x="176" y="225" width="22" height="70" rx="4"/>
+          <rect x="442" y="225" width="22" height="70" rx="4"/>
+        </g>
+        <g class="dwg-plot">
+          <circle cx="320" cy="260" r="170" pathLength="1"/>
+          <circle cx="320" cy="260" r="158" pathLength="1" class="thin"/>
+          <path d="M152.7 199.1 A178 178 0 0 1 487.3 199.1" pathLength="1" class="thick"/>
+          <rect x="250" y="118" width="140" height="32" pathLength="1"/>
+          <circle cx="282" cy="134" r="9" pathLength="1" class="thin"/>
+          <circle cx="358" cy="134" r="9" pathLength="1" class="thin"/>
+          <rect x="195" y="205" width="70" height="130" pathLength="1"/>
+          <rect x="345" y="225" width="95" height="105" pathLength="1"/>
+          <rect x="357" y="237" width="71" height="81" rx="6" pathLength="1" class="thin"/>
+          <circle cx="320" cy="245" r="13" pathLength="1"/>
+          <circle cx="372" cy="208" r="6" pathLength="1"/>
+          <path d="M205 345 L255 345 M205 195 L255 195" pathLength="1" class="thin"/>
+        </g>
+        <g class="dwg-dim">
+          <path d="M150 268 V494 M490 268 V494" class="ext"/>
+          <path d="M152 484 H488" marker-start="url(#arr)" marker-end="url(#arr)"/>
+          <text x="320" y="476" text-anchor="middle">Ø 340</text>
+          <path d="M320 50 V18" marker-end="url(#arr)"/>
+          <text x="332" y="34">FRONT</text>
+        </g>
+        <g class="dwg-callouts">
+          <path d="M390 134 L470 78 H486"/><circle cx="390" cy="134" r="3"/>
+          <text x="490" y="74">STEREO CAMERA</text><text x="490" y="89" class="sub">MYNT EYE D1000</text>
+          <path d="M440 290 L520 312 H530"/><circle cx="440" cy="290" r="3"/>
+          <text x="534" y="308">JETSON</text><text x="534" y="323" class="sub">ORIN NANO 8GB</text>
+          <path d="M372 208 L470 170 H530"/><circle cx="372" cy="208" r="3"/>
+          <text x="534" y="166">OI PORT</text><text x="534" y="181" class="sub">MINI-DIN 7</text>
+          <path d="M195 300 L120 360 H104"/><circle cx="195" cy="300" r="3"/>
+          <text x="100" y="356" text-anchor="end">18 V PACK</text><text x="100" y="371" text-anchor="end" class="sub">→ 15 V BUCK</text>
+          <path d="M309 238 L232 176 H120"/><circle cx="309" cy="238" r="3"/>
+          <text x="116" y="172" text-anchor="end">CLEAN</text><text x="116" y="187" text-anchor="end" class="sub">KEPT CLEAR</text>
+        </g>
+      </svg>
+      <figcaption><span class="fig-no">FIG. 00</span> Roomba 550, top view. Dimensions in mm.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="block" aria-labelledby="feature-title">
+  <div class="wrap">
+    <h2 class="block__title" id="feature-title"><span class="block__no">01</span>Featured project</h2>
+    <div class="feature">
+      <div class="feature__media">{{featured_video}}</div>
+      <div class="feature__copy" data-reveal>
+        <p class="feature__lead">A 2007 Roomba that maps the house by itself.</p>
+        <p>{{featured_summary}}</p>
+        <div class="bootlog" aria-label="Current status">
+          <p class="bootlog__head">$ systemctl status roomba</p>
+          <ul class="pills">{{status_pills}}</ul>
+        </div>
+        <p class="feature__links"><a class="btn" href="{{base}}/roomba/">[ open project ]</a> <a class="link" href="{{newest_href}}">latest: {{newest_title}}</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" aria-labelledby="latest-title">
+  <div class="wrap">
+    <h2 class="block__title" id="latest-title"><span class="block__no">02</span>Latest log entries</h2>
+    <p class="term-line" aria-hidden="true"><span class="term__ps1">brett@brettsbox:~$</span> ls -lt log/ | head -3</p>
+    {{latest_posts}}
+    <p class="more"><a class="link" href="{{base}}/blog/">all {{post_count}} entries →</a></p>
+  </div>
+</section>
+
+<section class="block" aria-labelledby="projects-title">
+  <div class="wrap">
+    <h2 class="block__title" id="projects-title"><span class="block__no">03</span>Sheet index</h2>
+    <div class="project-grid">
+{{project_cards}}
+    </div>
+  </div>
+</section>
+
+<section class="block" aria-labelledby="now-title">
+  <div class="wrap">
+    <h2 class="block__title" id="now-title"><span class="block__no">04</span>On the bench</h2>
+    <ul class="todo" data-reveal>{{now_items}}</ul>
+  </div>
+</section>

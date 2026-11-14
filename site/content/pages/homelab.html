@@ -1,0 +1,88 @@
+---
+title: Homelab
+slug: homelab
+nav: homelab
+sheet: PRJ-02
+eyebrow: Project 02 · Running
+lede: One quiet little PC in the corner runs my firewall, photo library, file share, home automation and this website. Here's what's on it and why.
+description: A small self-hosted homelab on Proxmox VE: an OPNsense firewall with segmented networks, ZFS storage, Immich and Ente for photos, Home Assistant, WireGuard, and this website behind a Cloudflare Tunnel.
+---
+<section class="section" aria-labelledby="why">
+<h2 id="why">Why self-host?</h2>
+<p>Partly for privacy: our family photos are ours, and I'd rather they lived on hardware I can touch. Partly because it's the best way I know to really learn how networks, storage and services fit together. And partly because it's genuinely fun to run your own little corner of the internet.</p>
+</section>
+
+<section class="section" aria-labelledby="box">
+<h2 id="box">The box</h2>
+<dl class="spec-grid">
+  <div><dt>Hardware</dt><dd>Lenovo ThinkCentre, 6 cores, 32 GB RAM</dd></div>
+  <div><dt>Hypervisor</dt><dd>Proxmox VE, running a mix of virtual machines and lightweight containers</dd></div>
+  <div><dt>Storage</dt><dd>ZFS: checksums on every block, cheap snapshots, no silent corruption</dd></div>
+  <div><dt>Network</dt><dd>OPNsense firewall VM with separate, segmented networks</dd></div>
+</dl>
+</section>
+
+<section class="section" aria-labelledby="network">
+<h2 id="network">The network</h2>
+<p>The firewall runs as a virtual machine on the same Proxmox host. Rather than one flat network where every device can talk to every other device, things are split into segments by how much I trust them:</p>
+<div class="zone-grid">
+  <div class="zone zone--servers"><strong>Servers</strong><span>The services below. Reachable from home devices, on purpose and only where needed.</span></div>
+  <div class="zone zone--iot"><strong>IoT</strong><span>Smart plugs, sensors and anything with firmware I don't fully trust. It can reach Home Assistant, not my laptop.</span></div>
+  <div class="zone zone--dmz"><strong>DMZ</strong><span>Anything that faces the internet lives here, fenced off from everything else.</span></div>
+</div>
+<p>For getting in from outside, I use <strong>WireGuard</strong>: a fast, modern VPN that makes my phone behave as if it were on the home network. Nothing else is exposed directly.</p>
+</section>
+
+<section class="section" aria-labelledby="services">
+<h2 id="services">What runs on it</h2>
+<div class="service-grid">
+  <article class="service">
+    <h3>Immich</h3>
+    <p>Our photo and video library, with face recognition and search. Migrated over from a Windows PC. The machine-learning jobs are offloaded to my desktop's RTX 5090, so the little server doesn't break a sweat.</p>
+  </article>
+  <article class="service">
+    <h3>Ente</h3>
+    <p>End-to-end encrypted photo backup. Even the server it runs on can't see the photos.</p>
+  </article>
+  <article class="service">
+    <h3>Samba file share</h3>
+    <p>Plain old network drive for the household's documents, on ZFS so it's snapshotted and checksummed.</p>
+  </article>
+  <article class="service">
+    <h3>Home Assistant</h3>
+    <p>Local home automation that keeps working when the internet doesn't.</p>
+  </article>
+  <article class="service">
+    <h3>WireGuard</h3>
+    <p>Remote access to everything above, from anywhere, without opening services to the internet.</p>
+  </article>
+  <article class="service">
+    <h3>Nextcloud <span class="pill pill--info">In progress</span></h3>
+    <p>For sharing files and albums with people outside the house.</p>
+  </article>
+  <article class="service">
+    <h3>Account portal</h3>
+    <p>A small self-service portal I wrote in Rust, so family members can manage their own accounts without asking me.</p>
+  </article>
+  <article class="service">
+    <h3>This website</h3>
+    <p>Static files served by nginx from a tiny container, published through a Cloudflare Tunnel.</p>
+  </article>
+</div>
+</section>
+
+<section class="section" aria-labelledby="site">
+<h2 id="site">How this site is served</h2>
+<p>The tunnel is the clever part: the container makes an <em>outbound</em> connection to Cloudflare, and visitors reach the site through it. There are no open ports on my router for the website at all.</p>
+{{flow:serve}}
+</section>
+
+<section class="section" aria-labelledby="next">
+<h2 id="next">Next on the list</h2>
+<ul>
+  <li>Finish the Nextcloud setup for sharing outside the house.</li>
+  <li>Write up the network segmentation in more detail (in general terms; I won't be publishing my firewall rules).</li>
+  <li>Photos of the hardware, such as it is.</li>
+</ul>
+{{soon:The homelab corner and the little ThinkCentre that runs it all.}}
+</section>

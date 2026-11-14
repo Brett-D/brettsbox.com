@@ -1,0 +1,22 @@
+<article class="post">
+  <header class="page-head page-head--post">
+    <div class="page-head__bg" aria-hidden="true"></div>
+    <div class="wrap">
+      <p class="kicker"><a href="{{base}}/blog/">Build log</a> · Entry {{part}} / {{total}}</p>
+      <h1 class="page-head__title">{{title}}</h1>
+      <p class="page-head__lede">{{summary}}</p>
+      <ul class="post-meta">
+        <li><time datetime="{{date_iso}}">{{date_human}}</time></li>
+        <li>{{minutes}} min read</li>
+        <li class="post-meta__tags"><ul class="tags">{{tags}}</ul></li>
+      </ul>
+    </div>
+  </header>
+  <div class="prose">
+{{body}}
+  </div>
+  <nav class="wrap post-nav" aria-label="More build-log entries">
+    {{prev}}
+    {{next}}
+  </nav>
+</article>

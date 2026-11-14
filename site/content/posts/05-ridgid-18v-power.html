@@ -1,0 +1,50 @@
+---
+title: Powering it with a Ridgid 18 V tool battery
+slug: ridgid-18v-power
+date: 2026-11-13
+tags: roomba, power, hardware
+summary: With charging out of action, the robot now runs on a Ridgid power-tool battery through a fuse and a 15 V regulator. Plus: why the Roomba's fuel gauge started lying, and the voltage monitor that will replace it.
+image: /assets/img/ridgid-voltage-monitor.webp
+---
+<p>With the Roomba unable to charge its own battery (see <a href="{{base}}/blog/charging-error-3/">Charging Error 3</a>), I needed another way to keep it running. Ridgid 18 V lithium-ion tool batteries were already part of my workshop, along with a charger that knows exactly how to look after them. That's a lot of well-managed energy sitting around doing nothing.</p>
+
+<h2>The power path</h2>
+
+{{flow:power}}
+
+<p>A full Ridgid pack sits around 20–21 V and sags towards 15 V as it empties. That's more than the Roomba ever sees from its own NiMH pack when full, and it changes as the pack drains, so a <strong>15 V / 12 A buck regulator</strong> turns it into one steady voltage. 15 V sits comfortably inside the Roomba's normal battery range and inside the Jetson's 9–20 V input.</p>
+
+<p>The regulator's output is soldered to the Roomba's battery contacts, so the robot thinks it has a battery, and also feeds the Jetson's barrel jack. A <strong>7.5 A blade fuse</strong> goes right at the pack, before anything else. A lithium tool battery can deliver a frightening amount of current into a short circuit; the fuse makes sure a pinched wire is a blown fuse, not a fire.</p>
+
+{{img:roomba-system-wiring.webp|System wiring diagram: the Ridgid pack feeds a 7.5 amp fuse and a 15 volt, 12 amp buck regulator whose output goes to the Roomba's battery contacts and the Jetson's barrel jack. A safety box says not to dock or plug in the Roomba charger while running from the Ridgid pack.|Power on the top row, with the optional pack-voltage monitor tapped off after the fuse.}}
+
+<aside class="callout callout--warn">
+  <p class="callout__title">Don't dock it like this</p>
+  <p>In this configuration the robot must never go back to its dock or have its charger plugged in. The charger would be pushing current into a regulator output and a lithium pack that it knows nothing about.</p>
+</aside>
+
+<h2>The fuel gauge that lied</h2>
+
+<p>The Roomba estimates its charge by counting the current flowing in and out of its own NiMH pack. Feed it from somewhere else and that number means nothing. During one test drive, on a freshly charged Ridgid pack, it decided it was at <strong>20%</strong> and headed home to its dock, which is precisely the one thing it mustn't do now.</p>
+
+<p>So the robot's own battery percentage is out, and the pack voltage needs to become the source of truth.</p>
+
+<h2>Measuring the real battery</h2>
+
+<p>The plan is a pack-voltage monitor that reads the Ridgid pack directly, <em>before</em> the regulator, so the Jetson can see it actually going flat:</p>
+
+<ul>
+  <li>An <strong>ADS1115</strong> 16-bit ADC breakout on the Jetson's I2C bus, powered from 3.3 V.</li>
+  <li>A <strong>100 kΩ / 15 kΩ divider</strong> scales the pack down by about 7.7×: a full 21 V pack reads as 2.74 V, safely inside the ADC's ±4.096 V range.</li>
+  <li>A 100 nF capacitor across the bottom resistor filters out motor noise.</li>
+  <li>Software warns at 16 V, then stops driving and shuts down cleanly at 15 V, about 3.0 V per cell.</li>
+</ul>
+
+{{img:ridgid-voltage-monitor.webp|Schematic of the pack voltage monitor: after the 7.5 amp fuse, a 100 kilohm and 15 kilohm divider with a 100 nanofarad capacitor feeds input A0 of an ADS1115 module, which connects to the Jetson Orin Nano's 40-pin header for 3.3 volts, SDA, SCL and ground.|The planned monitor. The divider stays at the pack end, so the ADC never sees more than a few volts.}}
+
+<pre><code>Vpack = V_A0 × (100k + 15k) / 15k = V_A0 × 7.667
+i2cdetect -y -r 7   # the ADS1115 should answer at 0x48</code></pre>
+
+<p>It's a stopgap until charging is fixed, but it works, and the pack is looked after by its own proper charger rather than by a robot with a known charging fault.</p>
+
+{{soon:The Ridgid pack, fuse and regulator mounted on the robot.}}

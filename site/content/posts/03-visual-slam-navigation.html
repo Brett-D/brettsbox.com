@@ -1,0 +1,69 @@
+---
+title: Visual SLAM and navigation on a Roomba
+slug: visual-slam-navigation
+date: 2026-11-10
+tags: roomba, vslam, nav2, ros2
+summary: From a stereo camera to a robot that explores rooms on its own: Basalt visual-inertial odometry, RTAB-Map, Nav2 and a web dashboard, plus five things that bit me along the way.
+image: /assets/media/vslam-demo-poster.jpg
+---
+<p>This is the post where the Roomba stops being a remote-control car and starts finding its own way around. Here's where it ended up: I press <em>Explore &amp; map</em>, and it drives off into rooms it has never seen, building a map as it goes.</p>
+
+{{video:vslam}}
+
+<h2>The pipeline</h2>
+
+<p>Robot navigation is a relay race. Each stage takes the previous one's output, adds something, and hands it on:</p>
+
+{{flow:pipeline}}
+
+<h3>1. Where am I moving? Visual-inertial odometry</h3>
+
+<p><a href="https://gitlab.com/VladyslavUsenko/basalt">Basalt</a> watches features in the stereo images, combines them with the camera's IMU, and estimates how the camera has moved, many times a second. It runs on the Jetson's CPU. It's impressively accurate until the camera stares at a blank wall or gets dazzled by a window, and then it loses track.</p>
+
+<h3>2. Bridging the gaps</h3>
+
+<p>So between Basalt and everything else sits a small watchdog node I wrote. While vision is healthy it passes the motion through. When tracking drops out, it bridges the gap with wheel odometry and the gyro, then hands back to vision once tracking recovers. The rest of the system never sees a jump.</p>
+
+<h3>3. The map: RTAB-Map</h3>
+
+<p><a href="https://introlab.github.io/rtabmap/">RTAB-Map</a> takes that motion plus the depth images and builds the map. Its party trick is <em>loop closure</em>: when the robot comes back to somewhere it has been before and recognises it, RTAB-Map corrects all the drift that built up along the way and snaps the map straight.</p>
+
+<h3>4. Getting somewhere: Nav2</h3>
+
+<p><a href="https://docs.nav2.org/">Nav2</a> turns the map into <em>costmaps</em> (where it's safe to drive and where it isn't), plans a path, and follows it with the Regulated Pure Pursuit controller, which slows down for tight turns and near obstacles. A collision monitor sits at the very end of the chain and will slow or stop the robot if anything gets too close, whatever the planner wants.</p>
+
+<h3>5. The dashboard</h3>
+
+<p>On top sits a small web app I can open on my phone: the live map, the camera feed, a drive pad, <em>tap-to-go</em> (tap a spot on the map and the robot plans its way there) and <em>Explore &amp; map</em>, which hunts for <em>frontiers</em>, the edges between known and unknown space, and drives to them one by one until there's nothing left to discover.</p>
+
+<h2>Five things that bit me</h2>
+
+<ol class="lessons">
+  <li>
+    <strong>Sending Start drops you back to Passive.</strong>
+    The OI's Start command (128) puts the robot in Passive mode, even if it was already in Safe mode. My driver re-sent Start when it reconnected, and the robot quietly stopped accepting drive commands. Now every Start is followed by the mode I actually want.
+  </li>
+  <li>
+    <strong>One of my bumpers was lying.</strong>
+    A stuck bumper switch reported a permanent collision, so the bump stop never let go. The driver can now be told to ignore a specific faulty sensor, rather than me ignoring safety altogether.
+  </li>
+  <li>
+    <strong>Nav2's velocity polygons have to cover everything.</strong>
+    In Nav2 Jazzy, the collision monitor's velocity polygons let you use a different safety zone at different speeds. Every combination of forward and turning speed the controller can command has to fall inside one of them. Leave a gap and the monitor misbehaves at exactly those speeds.
+  </li>
+  <li>
+    <strong>Wheels lie on carpet.</strong>
+    Turning on the spot, the wheel encoders claimed about 40% more rotation than actually happened: the wheels scrub sideways on carpet. The gyro and the visual odometry agreed with each other, so for rotation, they win.
+  </li>
+  <li>
+    <strong>Don't chase frontiers you can't reach.</strong>
+    The explorer kept choosing frontiers it could <em>see</em> through gaps, under furniture or between railings, but couldn't drive to. Goals now stop short of the frontier, in clear space the robot can actually reach.
+  </li>
+</ol>
+
+<aside class="callout">
+  <p class="callout__title">Belt, braces and a bumper</p>
+  <p>Stairs and furniture don't forgive mistakes. The Roomba's own cliff sensors stay active in Safe mode, the collision monitor watches the depth camera, and the bump stop is the last resort. Three layers, because any one of them can be wrong.</p>
+</aside>
+
+<p>Next: an unexpected detour into the Roomba's charging circuit, in <a href="{{base}}/blog/charging-error-3/">chasing Charging Error 3</a>.</p>

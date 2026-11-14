@@ -1,0 +1,79 @@
+---
+title: "Talking to the Roomba: serial wiring and a ROS 2 driver"
+slug: serial-wiring-ros2-driver
+date: 2026-11-08
+tags: roomba, serial, ros2
+summary: The Roomba's 7-pin Mini-DIN port, why my first level-shifter wiring was flaky, the 5 V FT232 adapter that fixed it, and the open-source ROS 2 driver I wrote on top.
+image: /assets/img/roomba-system-wiring.webp
+---
+<p>The ESP32 proved the Roomba would listen. Now the Jetson needed to hold a conversation with it for hours at a time, at full speed, without dropping a byte. That turned out to be harder than it sounds.</p>
+
+<h2>The port</h2>
+
+<p>The Open Interface lives on a 7-pin Mini-DIN socket under the Roomba's faceplate. Looking at the pins, this is what each one does:</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th scope="col">Pin</th><th scope="col">Name</th><th scope="col">What it does</th></tr></thead>
+  <tbody>
+    <tr><td>1, 2</td><td>Vpwr</td><td>Battery positive, unregulated (around 14–17 V). <strong>Do not connect.</strong></td></tr>
+    <tr><td>3</td><td>RXD</td><td>Serial data <em>into</em> the Roomba (0–5 V)</td></tr>
+    <tr><td>4</td><td>TXD</td><td>Serial data <em>out of</em> the Roomba (0–5 V)</td></tr>
+    <tr><td>5</td><td>BRC</td><td>Baud rate change / wake-up input</td></tr>
+    <tr><td>6, 7</td><td>GND</td><td>Ground</td></tr>
+  </tbody>
+</table>
+</div>
+
+<aside class="callout callout--danger">
+  <p class="callout__title">Never connect pins 1 or 2 to your adapter</p>
+  <p>They carry raw battery voltage. A USB-serial adapter expects 5 V at most; 15-plus volts will destroy it, and possibly the USB port it's plugged into. Wire only RXD, TXD and ground (and BRC if you need it).</p>
+</aside>
+
+<h2>Attempt one: the Jetson's own UART</h2>
+
+<p>The Jetson has a hardware serial port on its 40-pin header, so the obvious plan was to use it. It runs at 3.3 V and the Roomba talks at 5 V, so I put a common BSS138 level-shifter board in between.</p>
+
+<p>It <em>mostly</em> worked, which is the worst kind of working. Sensor packets would occasionally arrive corrupted, commands sometimes went missing, and the driver had to resynchronise on the data stream far too often. These bidirectional shifter boards rely on pull-up resistors to make their rising edges, and those soft edges are a known weak spot at 115200 baud. Rather than fight it, I changed the approach.</p>
+
+<h2>Attempt two: a 5 V FT232 adapter</h2>
+
+<p>An FT232 USB-to-TTL adapter with its voltage jumper set to <strong>5 V</strong> speaks the Roomba's levels natively, so there's no level shifting at all. Plug it into the Jetson's USB port, connect TXD to the Roomba's RXD, RXD to TXD, and ground to ground, and talk at <strong>115200 baud, 8N1</strong>.</p>
+
+<p>It has been rock solid ever since: hours of streaming sensors and drive commands without a single framing error.</p>
+
+{{img:roomba-system-wiring.webp|Wiring diagram: a Ridgid 18 volt pack through a 7.5 amp fuse and 15 volt regulator powers the Roomba and the Jetson; the MYNT EYE camera connects to the Jetson over USB 3; an FT232 adapter set to 5 volts links the Jetson's USB to Mini-DIN pins 3, 4 and 6. Pins 1 and 2 are marked do not connect.|The full system wiring. The serial link is on the right: FT232 TXD to pin 3, RXD to pin 4, ground to pin 6.}}
+
+<h2>A ROS 2 driver</h2>
+
+<p>With a reliable link, I wrote a proper ROS 2 Jazzy driver and open-sourced it as <a href="https://github.com/Brett-D/roomba-serial-ros2">roomba-serial-ros2</a>. It does the boring-but-essential work so the rest of the robot doesn't have to know it's talking to a vacuum:</p>
+
+<ul>
+  <li><strong>Drive</strong>: takes standard velocity commands and turns them into the Roomba's wheel-speed packets.</li>
+  <li><strong>Odometry</strong>: reads the wheel encoder counts and publishes where the robot thinks it has moved.</li>
+  <li><strong>Sensors and battery</strong>: bumpers, cliffs, wheel drops, voltage, current, charge and temperature, all as ROS topics. It also exposes the fun stuff: brushes, LEDs, the 4-digit display, songs and the dock button.</li>
+  <li><strong>Safe and Full modes</strong>: it starts in Safe mode, which keeps the Roomba's own cliff protection active; Full mode hands over complete control when you really need it. On exit it hands the robot back in Passive mode.</li>
+  <li><strong>Bump stop and a command watchdog</strong>: if a bumper triggers, or commands stop arriving, or the serial link drops, the wheels stop.</li>
+  <li><strong>25 unit tests</strong>: packet parsing, encoder wrap-around and mode handling are tested without needing a robot on the desk.</li>
+</ul>
+
+<pre><code>$ ros2 launch roomba_driver roomba_driver.launch.py
+$ ros2 topic pub -r 10 /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.1}}"
+# Ctrl-C and the robot stops within half a second: no commands, no driving
+$ ros2 topic echo /roomba/sensors</code></pre>
+
+<h2>Things the manual doesn't tell you</h2>
+
+<p>A few findings from the real robot, all written up in the repository's troubleshooting notes:</p>
+
+<ul>
+  <li><strong>115200 baud</strong>, not 57600. The older SCI manual you'll find online is for pre-500 robots.</li>
+  <li><strong>Safe mode is refused while the robot is lifted or sitting on its charger</strong>, and every motor command then earns you error beeps. Put it on the floor.</li>
+  <li><strong>In Passive mode it falls asleep after five minutes</strong>, and streaming sensors doesn't keep it awake. Wiring the adapter's DTR line to BRC (pin 5) lets software wake it.</li>
+  <li><strong>Trust the wheel encoders</strong> (packets 43 and 44). The firmware's own distance and angle packets were not reliable.</li>
+  <li><strong>Don't stream everything at once.</strong> The full 84-byte sensor frame gave bad checksums in Safe mode; frames of 70 bytes or less are clean.</li>
+</ul>
+
+<p>The repository also has the wiring diagrams, an Open Interface reference, and a small command-line tool for poking the robot without ROS at all. It's Apache-2.0 licensed, so help yourself if you have a 500-series Roomba of your own.</p>
+
+<p>Next: <a href="{{base}}/blog/visual-slam-navigation/">giving it eyes, a map, and somewhere to go</a>.</p>

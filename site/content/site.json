@@ -1,0 +1,124 @@
+{
+  "site_name": "Brett's Box",
+  "author": "Brett",
+  "origin": "https://brettsbox.com",
+  "github": "https://github.com/Brett-D",
+  "description": "Brett's Box is a maker's lab notebook: an old Roomba turned into a mapping robot, a self-hosted homelab, and a 3D printer that keeps all of it held together.",
+  "blog_description": "Build notes from the bench: what I tried, what broke, what I measured and what finally worked.",
+  "variants": {
+    "lab": { "name": "Lab" },
+    "blueprint": { "name": "Blueprint" }
+  },
+  "nav": [
+    { "key": "home", "path": "/", "label": "Home", "cmd": "~" },
+    { "key": "roomba", "path": "/roomba/", "label": "Roomba", "cmd": "roomba" },
+    { "key": "blog", "path": "/blog/", "label": "Build log", "cmd": "log" },
+    { "key": "homelab", "path": "/homelab/", "label": "Homelab", "cmd": "homelab" },
+    { "key": "printing", "path": "/printing/", "label": "3D printing", "cmd": "printing" },
+    { "key": "about", "path": "/about/", "label": "About", "cmd": "about" }
+  ],
+  "videos": {
+    "vslam": {
+      "mp4": "/assets/media/vslam-demo.mp4",
+      "webm": "/assets/media/vslam-demo.webm",
+      "poster": "/assets/media/vslam-demo-poster.jpg",
+      "width": 1280,
+      "height": 960,
+      "alt": "Screen recording of the Roomba's web dashboard while it explores on its own: a grey-scale camera view on the left, and on the right a top-down map that grows as the robot drives, with its planned path drawn in purple and obstacles in red.",
+      "caption": "The robot exploring on its own. Left: what the camera sees. Right: the map it builds as it goes, with the planned path in purple and obstacles in red."
+    }
+  },
+  "home": {
+    "tagline": "Robots, homelab and 3D printing, built at the bench and written down as I go.",
+    "intro": "I like taking old hardware that most people would throw out and teaching it new tricks. This is my lab notebook: the wiring diagrams, the dead ends, the measurements and the small wins.",
+    "featured_summary": "A 2007-era Roomba 550 with a Jetson Orin Nano and a stereo depth camera on its back. It builds a map of the house with visual SLAM, plans its own routes with Nav2 and explores rooms it has never seen.",
+    "video_caption": "Live from the robot's dashboard: exploring and mapping on its own, no remote control.",
+    "status": [
+      { "label": "Autonomous mapping", "kind": "ok" },
+      { "label": "GPU pipeline (cuVSLAM)", "kind": "ok" },
+      { "label": "Ridgid 18 V power", "kind": "ok" },
+      { "label": "Charging error 3", "kind": "warn" },
+      { "label": "CPU vs GPU map comparison", "kind": "info" }
+    ],
+    "now": [
+      "Recording test drives to compare the CPU (Basalt) and GPU (cuVSLAM) pipelines' maps side by side.",
+      "Wiring an ADS1115 pack-voltage monitor so the robot parks itself before the Ridgid pack runs flat.",
+      "Still hunting the cause of Charging Error 3 (next step: borrow an oscilloscope)."
+    ]
+  },
+  "projects": [
+    {
+      "path": "/roomba/",
+      "code": "PRJ-01",
+      "title": "Roomba 550 → mapping robot",
+      "summary": "A Jetson, a stereo camera and ROS 2 Jazzy turn a 2007 vacuum into a robot that maps the house and drives itself.",
+      "status": "Active",
+      "status_kind": "ok",
+      "accent": "cyan",
+      "tags": ["ROS 2", "VSLAM", "Jetson"]
+    },
+    {
+      "path": "/homelab/",
+      "code": "PRJ-02",
+      "title": "Homelab",
+      "summary": "One small Proxmox box running my firewall, photo library, file share, home automation and this website.",
+      "status": "Running",
+      "status_kind": "ok",
+      "accent": "lime",
+      "tags": ["Proxmox", "ZFS", "Self-hosting"]
+    },
+    {
+      "path": "/printing/",
+      "code": "PRJ-03",
+      "title": "3D printing",
+      "summary": "A tuned-up Ender 3 V2 on Klipper, and the parametric, code-generated parts that hold my projects together.",
+      "status": "Printing",
+      "status_kind": "info",
+      "accent": "pink",
+      "tags": ["Klipper", "OrcaSlicer", "Python CAD"]
+    }
+  ],
+  "flows": {
+    "pipeline": {
+      "caption": "The navigation pipeline, from photons to wheel commands.",
+      "steps": [
+        { "title": "Stereo camera", "detail": "MYNT EYE D1000: stereo pair, IR depth and a built-in IMU" },
+        { "title": "Visual odometry", "detail": "Basalt on the CPU, or NVIDIA cuVSLAM on the GPU" },
+        { "title": "Sensor fusion", "detail": "Wheel odometry and gyro bridge the gaps when vision loses track" },
+        { "title": "RTAB-Map", "detail": "Builds the map and snaps it straight with loop closures" },
+        { "title": "Nav2", "detail": "Costmaps, path planning and Regulated Pure Pursuit control" },
+        { "title": "Collision monitor", "detail": "Last line of defence: slows or stops before contact" },
+        { "title": "Roomba driver", "detail": "My ROS 2 node speaking the Open Interface over serial" }
+      ]
+    },
+    "power": {
+      "caption": "How the robot is powered while the charging fault is unresolved.",
+      "steps": [
+        { "title": "Ridgid 18 V pack", "detail": "Li-ion tool battery, 15–21 V" },
+        { "title": "7.5 A blade fuse", "detail": "Right at the pack, before anything else" },
+        { "title": "15 V / 12 A buck", "detail": "Steady 15 V no matter how full the pack is" },
+        { "title": "Roomba + Jetson", "detail": "Soldered to the battery contacts; Jetson on its barrel jack" }
+      ]
+    },
+    "charge": {
+      "caption": "The Roomba 550's charge path, simplified. Error 3 means the self-test of the two charging MOSFETs failed.",
+      "steps": [
+        { "title": "Charger or dock", "detail": "Side jack or dock contacts" },
+        { "title": "F2 fuse → D58", "detail": "Input protection and a blocking diode" },
+        { "title": "Q17 P-channel FET", "detail": "ZXMP6A17G, gate driven by Q20" },
+        { "title": "Q18 P-channel FET", "detail": "ZXMP6A17G, gate driven by Q21" },
+        { "title": "NiMH battery", "detail": "14.4 V pack and the robot's loads" }
+      ]
+    },
+    "serve": {
+      "caption": "How this website gets from my editor to your browser.",
+      "steps": [
+        { "title": "git push", "detail": "Plain HTML, CSS and a little JavaScript" },
+        { "title": "GitHub", "detail": "The repository is the single source of truth" },
+        { "title": "Container pulls", "detail": "A systemd timer fetches new commits every two minutes" },
+        { "title": "nginx", "detail": "Serves static files from a small Proxmox container" },
+        { "title": "Cloudflare Tunnel", "detail": "Outbound-only connection, no open ports at home" }
+      ]
+    }
+  }
+}
