@@ -24,6 +24,7 @@ image: /assets/media/vslam-demo-poster.jpg
   <li><span class="pill pill--ok">Working</span><div><strong>Ridgid 18 V power</strong><span>Fused, regulated to 15 V, soldered to the battery contacts. No docking in this setup.</span></div></li>
   <li><span class="pill pill--info">In progress</span><div><strong>Pack-voltage monitor</strong><span>ADS1115 on the Jetson's I2C bus so the robot stops before the pack goes flat.</span></div></li>
   <li><span class="pill pill--info">In progress</span><div><strong>CPU vs GPU comparison</strong><span>First numbers are in: <a href="{{base}}/blog/basalt-vs-cuvslam/">Basalt vs cuVSLAM, round one</a>. Next, the same drive mapped by both and overlaid.</span></div></li>
+  <li><span class="pill pill--info">Testing</span><div><strong>Rust rewrite</strong><span>Ten nodes ported with identical output at a fraction of the CPU: <a href="{{base}}/blog/python-to-rust/">From Python to Rust</a>. Next, the first real drive on Rust.</span></div></li>
   <li><span class="pill pill--warn">Unresolved</span><div><strong>Charging Error 3</strong><span>Fault is in the robot's charge-control circuitry. Needs an oscilloscope to catch the self-test.</span></div></li>
 </ul>
 </section>
@@ -37,7 +38,7 @@ image: /assets/media/vslam-demo-poster.jpg
   <div><dt>Serial link</dt><dd>FT232 USB-TTL adapter, jumper on 5 V, to the 7-pin Mini-DIN port</dd></div>
   <div><dt>Power</dt><dd>Ridgid 18 V Li-ion pack → 7.5 A fuse → 15 V / 12 A buck regulator</dd></div>
   <div><dt>Chassis</dt><dd>Parametric 3D-printed platform with snap pins and dovetails</dd></div>
-  <div><dt>Software</dt><dd>ROS 2 Jazzy, cuVSLAM / Basalt, robot_localization, RTAB-Map, Nav2, nvblox</dd></div>
+  <div><dt>Software</dt><dd>ROS 2 Jazzy with my own nodes in Rust, cuVSLAM / Basalt, robot_localization, RTAB-Map, Nav2, nvblox</dd></div>
   <div><dt>Interface</dt><dd>Web dashboard: live map, camera, drive pad, tap-to-go, Explore &amp; map</dd></div>
 </dl>
 </section>

@@ -38,6 +38,7 @@
       { "label": "CPU vs GPU map comparison", "kind": "info" }
     ],
     "now": [
+      "Taking the robot's new Rust nodes on their first real drive: ten of them, a fraction of the CPU of the Python originals.",
       "Recording test drives to compare the CPU (Basalt) and GPU (cuVSLAM) pipelines' maps side by side.",
       "Wiring an ADS1115 pack-voltage monitor so the robot parks itself before the Ridgid pack runs flat.",
       "Still hunting the cause of Charging Error 3 (next step: borrow an oscilloscope)."
@@ -52,7 +53,7 @@
       "status": "Active",
       "status_kind": "ok",
       "accent": "cyan",
-      "tags": ["ROS 2", "VSLAM", "Jetson"]
+      "tags": ["ROS 2", "VSLAM", "Jetson", "Rust"]
     },
     {
       "path": "/homelab/",

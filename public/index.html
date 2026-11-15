@@ -68,7 +68,7 @@
     <a class="gcard gcard--head" href="#projects">Projects · 04 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4"/></svg></a>
     <a class="gcard gcard--tall" href="/horse-tracker/"><canvas data-thumb="horse" aria-hidden="true"></canvas><span class="gcard__meta"><i class="off"></i>PRJ-04 · Soon</span><span class="gcard__title">Horse Tracker 9000</span></a>
     <a class="gcard gcard--sq" href="/roomba/"><canvas data-thumb="robot" aria-hidden="true"></canvas><span class="gcard__meta"><i></i>PRJ-01 · Active</span><span class="gcard__title">Roomba 550</span></a>
-    <a class="gcard gcard--wide" href="/blog/basalt-vs-cuvslam/"><canvas data-thumb="house" aria-hidden="true"></canvas><span class="gcard__text"><b>Latest from the build log</b><span>Basalt vs cuVSLAM, round one: CPU or GPU?</span></span><svg class="gcard__go" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4"/></svg></a>
+    <a class="gcard gcard--wide" href="/blog/python-to-rust/"><canvas data-thumb="house" aria-hidden="true"></canvas><span class="gcard__text"><b>Latest from the build log</b><span>From Python to Rust: same robot, a fraction of the CPU</span></span><svg class="gcard__go" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4"/></svg></a>
   </aside>
 
   <nav class="strip" aria-label="Projects in the scene">
@@ -103,7 +103,7 @@
       <ul class="pills" aria-label="Current status"><li class="pill pill--ok">Autonomous mapping</li><li class="pill pill--ok">GPU pipeline (cuVSLAM)</li><li class="pill pill--ok">Ridgid 18 V power</li><li class="pill pill--warn">Charging error 3</li><li class="pill pill--info">CPU vs GPU map comparison</li></ul>
       <div class="feature__links">
         <a class="btn" href="/roomba/">Project page</a>
-        <a class="link-arrow" href="/blog/basalt-vs-cuvslam/">Latest: Basalt vs cuVSLAM, round one: CPU or GPU?</a>
+        <a class="link-arrow" href="/blog/python-to-rust/">Latest: From Python to Rust: same robot, a fraction of the CPU</a>
       </div>
     </div>
   </div>
@@ -111,7 +111,7 @@
 
 <section class="stats" aria-label="Project vitals">
   <ul class="wrap stats__list">
-    <li data-reveal><span class="stats__num" data-count="7">7</span><span class="stats__label">Build-log entries so far</span></li>
+    <li data-reveal><span class="stats__num" data-count="8">8</span><span class="stats__label">Build-log entries so far</span></li>
     <li data-reveal><span class="stats__num">2007</span><span class="stats__label">Year the Roomba was new</span></li>
     <li data-reveal><span class="stats__num">0.3<small>cm</small></span><span class="stats__label">Parked drift in 60 s on the GPU</span></li>
     <li data-reveal><span class="stats__num">3</span><span class="stats__label">Sensors fused for its position</span></li>
@@ -123,9 +123,20 @@
     <div class="block__head" data-reveal>
       <p class="kicker">// Build log</p>
       <h2 class="block__title" id="latest-title">Fresh off the bench</h2>
-      <a class="link-arrow" href="/blog/">All 7 entries</a>
+      <a class="link-arrow" href="/blog/">All 8 entries</a>
     </div>
     <ol class="post-list"><li class="post-row" data-reveal>
+  <a class="post-row__link" href="/blog/python-to-rust/">
+    <span class="post-row__part">#08</span>
+    <span class="post-row__body">
+      <span class="post-row__meta"><time datetime="2026-11-15">15 November 2026</time> · 4 min</span>
+      <span class="post-row__title">From Python to Rust: same robot, a fraction of the CPU</span>
+      <span class="post-row__summary">Ten of the robot's ROS 2 nodes now have Rust versions, each checked against the Python original output for output. The five busiest went from about 1.3 CPU cores to under a fifth of one.</span>
+    </span>
+    <span class="post-row__arrow" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h11M9 4l4 4-4 4"/></svg></span>
+  </a>
+</li>
+<li class="post-row" data-reveal>
   <a class="post-row__link" href="/blog/basalt-vs-cuvslam/">
     <span class="post-row__part">#07</span>
     <span class="post-row__body">
@@ -146,17 +157,6 @@
     </span>
     <span class="post-row__arrow" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h11M9 4l4 4-4 4"/></svg></span>
   </a>
-</li>
-<li class="post-row" data-reveal>
-  <a class="post-row__link" href="/blog/ridgid-18v-power/">
-    <span class="post-row__part">#05</span>
-    <span class="post-row__body">
-      <span class="post-row__meta"><time datetime="2026-11-13">13 November 2026</time> · 3 min</span>
-      <span class="post-row__title">Powering it with a Ridgid 18 V tool battery</span>
-      <span class="post-row__summary">With charging out of action, the robot now runs on a Ridgid power-tool battery through a fuse and a 15 V regulator. Plus: why the Roomba's fuel gauge started lying, and the voltage monitor that will replace it.</span>
-    </span>
-    <span class="post-row__arrow" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h11M9 4l4 4-4 4"/></svg></span>
-  </a>
 </li></ol>
   </div>
 </section>
@@ -172,7 +172,7 @@
   <span class="project-card__top"><span class="project-card__code">PRJ-01</span><span class="pill pill--ok">Active</span></span>
   <span class="project-card__title">Roomba 550 → mapping robot</span>
   <span class="project-card__summary">A Jetson, a stereo camera and ROS 2 Jazzy turn a 2007 vacuum into a robot that maps the house and drives itself.</span>
-  <ul class="tags"><li class="tag">ROS 2</li><li class="tag">VSLAM</li><li class="tag">Jetson</li></ul>
+  <ul class="tags"><li class="tag">ROS 2</li><li class="tag">VSLAM</li><li class="tag">Jetson</li><li class="tag">Rust</li></ul>
   <span class="project-card__go" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h11M9 4l4 4-4 4"/></svg></span>
 </a>
 <a class="project-card" href="/homelab/" data-reveal>
@@ -206,7 +206,7 @@
       <p class="kicker">// Now</p>
       <h2 class="block__title" id="now-title">On the bench this week</h2>
     </div>
-    <ul class="now__list"><li>Recording test drives to compare the CPU (Basalt) and GPU (cuVSLAM) pipelines' maps side by side.</li><li>Wiring an ADS1115 pack-voltage monitor so the robot parks itself before the Ridgid pack runs flat.</li><li>Still hunting the cause of Charging Error 3 (next step: borrow an oscilloscope).</li></ul>
+    <ul class="now__list"><li>Taking the robot's new Rust nodes on their first real drive: ten of them, a fraction of the CPU of the Python originals.</li><li>Recording test drives to compare the CPU (Basalt) and GPU (cuVSLAM) pipelines' maps side by side.</li><li>Wiring an ADS1115 pack-voltage monitor so the robot parks itself before the Ridgid pack runs flat.</li><li>Still hunting the cause of Charging Error 3 (next step: borrow an oscilloscope).</li></ul>
   </div>
 </section>
 

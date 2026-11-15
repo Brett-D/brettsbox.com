@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Homelab · Brett&#x27;s Box</title>
-<meta name="description" content="A small self-hosted homelab on Proxmox VE: an OPNsense firewall with segmented networks, ZFS storage, Immich and Ente for photos, Home Assistant and WireGuard.">
+<meta name="description" content="A small self-hosted homelab on Proxmox VE: an OPNsense firewall with segmented networks, mirrored ZFS storage on four hot-swap drives, Immich and Ente for photos, Home Assistant and WireGuard.">
 <link rel="canonical" href="https://brettsbox.com/homelab/">
 <meta property="og:site_name" content="Brett&#x27;s Box">
 <meta property="og:title" content="Homelab · Brett&#x27;s Box">
-<meta property="og:description" content="A small self-hosted homelab on Proxmox VE: an OPNsense firewall with segmented networks, ZFS storage, Immich and Ente for photos, Home Assistant and WireGuard.">
+<meta property="og:description" content="A small self-hosted homelab on Proxmox VE: an OPNsense firewall with segmented networks, mirrored ZFS storage on four hot-swap drives, Immich and Ente for photos, Home Assistant and WireGuard.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://brettsbox.com/homelab/">
 <meta property="og:image" content="https://brettsbox.com/assets/img/og.png">
@@ -71,12 +71,42 @@
 <section class="section" aria-labelledby="box">
 <h2 id="box">The box</h2>
 <dl class="spec-grid">
-  <div><dt>Hardware</dt><dd>Lenovo ThinkCentre, 6 cores, 32 GB RAM</dd></div>
+  <div><dt>Hardware</dt><dd>Lenovo ThinkCentre Tiny (M920q), 6 cores, 32 GB RAM</dd></div>
   <div><dt>Hypervisor</dt><dd>Proxmox VE, running a mix of virtual machines and lightweight containers</dd></div>
-  <div><dt>Storage</dt><dd>ZFS: checksums on every block, cheap snapshots, no silent corruption</dd></div>
+  <div><dt>Storage</dt><dd>ZFS on four hard drives in two mirrored pairs, about 8 TB usable. <a href="#storage">More below</a></dd></div>
   <div><dt>Network</dt><dd>OPNsense firewall VM with separate, segmented networks</dd></div>
 </dl>
+</section>
+
+<section class="section" aria-labelledby="storage">
+<h2 id="storage">Drives and the case</h2>
+<p>A ThinkCentre Tiny has no room for 3.5-inch hard drives, so they live in a four-bay hot-swap cage underneath it. Both sit in a case I designed and printed for them.</p>
+<dl class="spec-grid">
+  <div><dt>System drive</dt><dd>512 GB M.2 NVMe SSD for Proxmox itself, also on ZFS</dd></div>
+  <div><dt>Big pair</dt><dd>2 × Seagate Exos 7E8 6 TB: 7200 rpm enterprise drives built to run 24/7</dd></div>
+  <div><dt>Small pair</dt><dd>2 × Seagate Barracuda 2 TB, 7200 rpm desktop drives</dd></div>
+  <div><dt>Pool</dt><dd>One ZFS pool made of the two mirrors: about 8 TB usable, half of it used</dd></div>
+  <div><dt>SATA adapter</dt><dd>RIITOP M.2 to SATA: an ASMedia ASM1166 chip, six SATA ports from two PCIe 3.0 lanes</dd></div>
+  <div><dt>Drive cage</dt><dd>Rosewill RSV-SATA-Cage-34: four hot-swap 3.5-inch trays and a 120 mm fan</dd></div>
+  <div><dt>Case</dt><dd>3D-printed in two parts, 187 × 208 × 263 mm, holding the cage with the ThinkCentre on top</dd></div>
+</dl>
 <figure class="figure " data-reveal><a class="figure__frame" href="/assets/img/nas-enclosure-photo.webp" title="Open full-size image"><img src="/assets/img/nas-enclosure-photo.webp" alt="The homelab server: a Lenovo ThinkCentre Tiny on top of four black hot-swap drive trays, in a grey 3D-printed case with hexagonal vents." width="1600" height="900" loading="lazy" decoding="async"></a><figcaption><span class="fig-no">Fig. 01</span> The whole homelab: the ThinkCentre and four hot-swap drive bays in a case I designed and printed. More on the case on the <a href="/printing/#nas-enclosure">3D printing page</a>.</figcaption></figure>
+
+<h3>SATA from an M.2 slot</h3>
+<p>The Tiny has no way to connect four hard drives on its own, so they go through a <strong>RIITOP M.2-to-SATA adapter</strong>. It fits an M.2 slot on the Tiny's underside, one normally used for an NVMe SSD, and an ASMedia <strong>ASM1166</strong> chip turns that slot's two PCIe 3.0 lanes into six SATA ports, four of which run to the drive cage. It's a plain AHCI controller, so Proxmox drives it with the standard Linux driver and ZFS sees each disk directly, with no RAID card in between. That matters, because ZFS wants to manage the disks itself.</p>
+
+<h3>The drive cage</h3>
+<p>The <strong>Rosewill RSV-SATA-Cage-34</strong> is designed to fill three 5.25-inch bays in a desktop tower, where DVD drives used to go, and turn them into four hot-swap trays for 3.5-inch drives. Each tray has an activity light, a 120 mm fan at the back pulls air over all four drives, and the cage takes its power through two Molex plugs. A failed drive slides out of the front without taking anything apart. With no tower to put it in, the printed case does that job: the cage slides into the bottom and the Tiny sits on ledges above it, with room underneath for the SATA cables.</p>
+
+<h3>Why two mirrors?</h3>
+<p>In each pair, both drives hold the same data, so either one can die without losing anything. ZFS spreads files across the two pairs, so together they behave like one big drive.</p>
+<ul>
+  <li><strong>Mixed sizes are fine.</strong> RAIDZ, ZFS's version of RAID 5, would treat all four drives as 2 TB drives and leave about 6 TB usable. As two mirrors, each pair uses its full size: 6 + 2 = 8 TB.</li>
+  <li><strong>Easy upgrades.</strong> Swap the two drives in a pair for bigger ones, one at a time, let ZFS copy the data onto each, and the pool grows.</li>
+  <li><strong>Quick rebuilds.</strong> Replacing a failed drive only means copying from its twin, which is faster and easier on the other drives than rebuilding RAIDZ.</li>
+  <li><strong>Self-healing.</strong> Every block has a checksum. If one copy comes back wrong, ZFS notices and repairs it from the other drive in the pair.</li>
+</ul>
+<p>A mirror isn't a backup, though: it protects against a dead drive, not a deleted folder. That's what ZFS snapshots are for.</p>
 </section>
 
 <section class="section" aria-labelledby="network">
@@ -114,7 +144,7 @@
     <p>Remote access to everything above, from anywhere, without opening services to the internet.</p>
   </article>
   <article class="service">
-    <h3>Nextcloud <span class="pill pill--info">In progress</span></h3>
+    <h3>Nextcloud</h3>
     <p>For sharing files and albums with people outside the house.</p>
   </article>
   <article class="service">
@@ -127,7 +157,6 @@
 <section class="section" aria-labelledby="next">
 <h2 id="next">Next on the list</h2>
 <ul>
-  <li>Finish the Nextcloud setup for sharing outside the house.</li>
   <li>Write up the network segmentation in more detail (in general terms; I won't be publishing my firewall rules).</li>
 </ul>
 </section>

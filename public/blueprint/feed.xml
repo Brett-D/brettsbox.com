@@ -1,6 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-<title>Brett&#x27;s Box build log</title><subtitle>Build notes from the bench: what I tried, what broke, what I measured and what finally worked.</subtitle><link href="https://brettsbox.com/feed.xml" rel="self"/><link href="https://brettsbox.com/"/><id>https://brettsbox.com/</id><updated>2026-11-14T00:00:00+00:00</updated><author><name>Brett</name></author>
+<title>Brett&#x27;s Box build log</title><subtitle>Build notes from the bench: what I tried, what broke, what I measured and what finally worked.</subtitle><link href="https://brettsbox.com/feed.xml" rel="self"/><link href="https://brettsbox.com/"/><id>https://brettsbox.com/</id><updated>2026-11-15T00:00:00+00:00</updated><author><name>Brett</name></author>
+<entry><title>From Python to Rust: same robot, a fraction of the CPU</title><link href="https://brettsbox.com/blog/python-to-rust/"/><id>https://brettsbox.com/blog/python-to-rust/</id><published>2026-11-15T00:00:00+00:00</published><updated>2026-11-15T00:00:00+00:00</updated><summary>Ten of the robot&#x27;s ROS 2 nodes now have Rust versions, each checked against the Python original output for output. The five busiest went from about 1.3 CPU cores to under a fifth of one.</summary><content type="html">&lt;p&gt;The Jetson was working too hard. On a typical exploration run its load average sat around 20 on six cores: far more work waiting than it had cores to run it on. Most of the heavy lifting was already native code: Nav2 and RTAB-Map are C++, and cuVSLAM and nvblox run on the GPU. The overhead was in the glue I&#x27;d written myself in Python. The web dashboard, the Roomba driver, the odometry watchdog and the obstacle detector each used a quarter to a half of a CPU core.&lt;/p&gt;
+
+&lt;p&gt;So the rule for this project is now Rust wherever it&#x27;s practical. Rather than redesign anything, each Python node gets a Rust twin that is a drop-in replacement: same node name, topics, parameters, services and even log lines. One launch argument, &lt;code&gt;rust_nodes&lt;/code&gt;, picks which set runs.&lt;/p&gt;
+
+&lt;h2&gt;The results&lt;/h2&gt;
+
+&lt;p&gt;CPU use is in percent of one core, measured on the Jetson with both versions running side by side on the same input:&lt;/p&gt;
+
+&lt;div class=&quot;table-wrap&quot;&gt;
+&lt;table&gt;
+  &lt;thead&gt;&lt;tr&gt;&lt;th scope=&quot;col&quot;&gt;Node&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;Python&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;Rust&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;&lt;td&gt;Web dashboard server&lt;/td&gt;&lt;td&gt;48%&lt;/td&gt;&lt;td&gt;&lt;strong&gt;10%&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Roomba driver&lt;/td&gt;&lt;td&gt;31%&lt;/td&gt;&lt;td&gt;&lt;strong&gt;2.4%&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Odometry watchdog&lt;/td&gt;&lt;td&gt;26%&lt;/td&gt;&lt;td&gt;&lt;strong&gt;2.2%&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Floor obstacles&lt;/td&gt;&lt;td&gt;19%&lt;/td&gt;&lt;td&gt;&lt;strong&gt;2.5%&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Wheel and gyro prep for the EKF&lt;/td&gt;&lt;td&gt;8.7%&lt;/td&gt;&lt;td&gt;&lt;strong&gt;1.2%&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Explorer and nav coach&lt;/td&gt;&lt;td colspan=&quot;2&quot;&gt;Rust uses about a sixth&lt;/td&gt;&lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Add up the first five and they went from about &lt;strong&gt;132% of a core to 18%&lt;/strong&gt;, giving back more than a whole core. Memory dropped too: the dashboard server peaks at 42 MB instead of 165 MB, and the driver and the watchdog at under 30 MB instead of about 75 MB.&lt;/p&gt;
+
+&lt;p&gt;The person detector, which finds people in the camera image with a TensorRT network on the GPU and works out how far away they are, is measured per camera frame instead. Its CPU time per frame fell from 45 to 13 ms, the median time from frame to result from 56 to 42 ms, and its memory from 649 to 448 MB. The map gap filler and the keep-out zones node were ported as well, so ten nodes now have Rust versions.&lt;/p&gt;
+
+&lt;h2&gt;Same output, or it doesn&#x27;t ship&lt;/h2&gt;
+
+&lt;p&gt;Faster is easy to claim. The hard rule was that every Rust node has to give &lt;em&gt;exactly&lt;/em&gt; the same output as the Python one, and that has to be proven, not eyeballed. Each port came with a test that feeds both versions identical input and compares everything they send out:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Odometry watchdog:&lt;/strong&gt; a 35-minute recorded drive (413,000 IMU samples and 30,700 camera poses) through both. Both forwarded the same 26,084 poses, made the same 87 recoveries and printed the same 577 log lines. The largest difference in any position was about 0.000000000003 m. The same check passed on 17 runs, including injected faults such as tracking loss and a slow reset.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Map gap filler:&lt;/strong&gt; 1,467 recorded and made-up maps, 23.5 million cells, identical.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Explorer:&lt;/strong&gt; the same goals on 572 maps from real drives, including the bump keep-out marks and retries.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Person detector:&lt;/strong&gt; 10,579 recorded frames, identical detections, distances and annotated images, down to the bytes of the JPEG.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Roomba driver:&lt;/strong&gt; a fake Roomba on a virtual serial port, with scripted bumps, cliffs, bad checksums and dropped streams. Both drivers sent the robot exactly the same bytes.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2&gt;Identical is harder than it sounds&lt;/h2&gt;
+
+&lt;p&gt;Python, NumPy and OpenCV each have their own quirks, and matching them bit for bit meant copying them on purpose:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Rounding:&lt;/strong&gt; to two decimal places, NumPy rounds 2.675 to 2.68, while Python&#x27;s own &lt;code&gt;round&lt;/code&gt; gives 2.67. The Rust code has to know which one the Python called.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Distances:&lt;/strong&gt; Python&#x27;s &lt;code&gt;math.hypot&lt;/code&gt; is not the C library&#x27;s &lt;code&gt;hypot&lt;/code&gt;; for some inputs they differ in the last bit. That&#x27;s enough to nudge a decision the other way.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Order matters:&lt;/strong&gt; OpenCV numbers connected blobs in a particular order and NumPy sorts with a particular algorithm. Both had to be reproduced, or ties came out differently.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Missing pieces:&lt;/strong&gt; ROS 2&#x27;s Rust library has no TF (the transforms between the robot&#x27;s coordinate frames), so it got a port of ROS&#x27;s own that gives bit-identical results. NVIDIA ships no Rust bindings for cuVSLAM&#x27;s messages either, so those are generated from the message definitions.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;The linker:&lt;/strong&gt; the standard Linux linker took over ten minutes to link one node on the Jetson. Switching to &lt;em&gt;mold&lt;/em&gt; fixed that.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;aside class=&quot;callout&quot;&gt;
+  &lt;p class=&quot;callout__title&quot;&gt;Not on the road yet&lt;/p&gt;
+  &lt;p&gt;Every number here comes from recorded drives and a simulated Roomba. The Rust nodes are now the default, so the next real drive will be the first on Rust. If anything misbehaves, &lt;code&gt;rust_nodes:=false&lt;/code&gt; brings back the Python versions.&lt;/p&gt;
+&lt;/aside&gt;
+
+&lt;p&gt;The code is in &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack&quot;&gt;roomba-jetson-stack&lt;/a&gt;, in &lt;code&gt;src/roomba_rs&lt;/code&gt;, along with the comparison tools in &lt;code&gt;tools/&lt;/code&gt;.&lt;/p&gt;
+</content></entry>
 <entry><title>Basalt vs cuVSLAM, round one: CPU or GPU?</title><link href="https://brettsbox.com/blog/basalt-vs-cuvslam/"/><id>https://brettsbox.com/blog/basalt-vs-cuvslam/</id><published>2026-11-14T00:00:00+00:00</published><updated>2026-11-14T00:00:00+00:00</updated><summary>The robot can work out how it&#x27;s moving with Basalt on the CPU or NVIDIA cuVSLAM on the GPU. The GPU holds still better; Basalt stays on track better once it moves. Here&#x27;s the scorecard so far.</summary><content type="html">&lt;p&gt;The robot now has two ways to work out how it&#x27;s moving. &lt;a href=&quot;https://brettsbox.com/blog/visual-slam-navigation/&quot;&gt;Basalt&lt;/a&gt; runs on the Jetson&#x27;s CPU and &lt;a href=&quot;https://brettsbox.com/blog/gpu-cuvslam-nvblox/&quot;&gt;NVIDIA cuVSLAM&lt;/a&gt; runs on its GPU. Both watch the same stereo camera and IMU, and one launch argument picks which one is in charge. That makes for a fair fight: I can record a run once and replay exactly the same camera frames through each.&lt;/p&gt;
 
 &lt;p&gt;The side-by-side maps are still to come, but the early numbers already tell an interesting story: the GPU is &lt;em&gt;not&lt;/em&gt; simply better.&lt;/p&gt;

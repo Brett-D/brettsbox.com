@@ -1,0 +1,64 @@
+---
+title: "From Python to Rust: same robot, a fraction of the CPU"
+slug: python-to-rust
+scene: robot
+date: 2026-11-15
+tags: roomba, rust, ros2
+summary: Ten of the robot's ROS 2 nodes now have Rust versions, each checked against the Python original output for output. The five busiest went from about 1.3 CPU cores to under a fifth of one.
+---
+<p>The Jetson was working too hard. On a typical exploration run its load average sat around 20 on six cores: far more work waiting than it had cores to run it on. Most of the heavy lifting was already native code: Nav2 and RTAB-Map are C++, and cuVSLAM and nvblox run on the GPU. The overhead was in the glue I'd written myself in Python. The web dashboard, the Roomba driver, the odometry watchdog and the obstacle detector each used a quarter to a half of a CPU core.</p>
+
+<p>So the rule for this project is now Rust wherever it's practical. Rather than redesign anything, each Python node gets a Rust twin that is a drop-in replacement: same node name, topics, parameters, services and even log lines. One launch argument, <code>rust_nodes</code>, picks which set runs.</p>
+
+<h2>The results</h2>
+
+<p>CPU use is in percent of one core, measured on the Jetson with both versions running side by side on the same input:</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th scope="col">Node</th><th scope="col">Python</th><th scope="col">Rust</th></tr></thead>
+  <tbody>
+    <tr><td>Web dashboard server</td><td>48%</td><td><strong>10%</strong></td></tr>
+    <tr><td>Roomba driver</td><td>31%</td><td><strong>2.4%</strong></td></tr>
+    <tr><td>Odometry watchdog</td><td>26%</td><td><strong>2.2%</strong></td></tr>
+    <tr><td>Floor obstacles</td><td>19%</td><td><strong>2.5%</strong></td></tr>
+    <tr><td>Wheel and gyro prep for the EKF</td><td>8.7%</td><td><strong>1.2%</strong></td></tr>
+    <tr><td>Explorer and nav coach</td><td colspan="2">Rust uses about a sixth</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Add up the first five and they went from about <strong>132% of a core to 18%</strong>, giving back more than a whole core. Memory dropped too: the dashboard server peaks at 42 MB instead of 165 MB, and the driver and the watchdog at under 30 MB instead of about 75 MB.</p>
+
+<p>The person detector, which finds people in the camera image with a TensorRT network on the GPU and works out how far away they are, is measured per camera frame instead. Its CPU time per frame fell from 45 to 13 ms, the median time from frame to result from 56 to 42 ms, and its memory from 649 to 448 MB. The map gap filler and the keep-out zones node were ported as well, so ten nodes now have Rust versions.</p>
+
+<h2>Same output, or it doesn't ship</h2>
+
+<p>Faster is easy to claim. The hard rule was that every Rust node has to give <em>exactly</em> the same output as the Python one, and that has to be proven, not eyeballed. Each port came with a test that feeds both versions identical input and compares everything they send out:</p>
+
+<ul>
+  <li><strong>Odometry watchdog:</strong> a 35-minute recorded drive (413,000 IMU samples and 30,700 camera poses) through both. Both forwarded the same 26,084 poses, made the same 87 recoveries and printed the same 577 log lines. The largest difference in any position was about 0.000000000003 m. The same check passed on 17 runs, including injected faults such as tracking loss and a slow reset.</li>
+  <li><strong>Map gap filler:</strong> 1,467 recorded and made-up maps, 23.5 million cells, identical.</li>
+  <li><strong>Explorer:</strong> the same goals on 572 maps from real drives, including the bump keep-out marks and retries.</li>
+  <li><strong>Person detector:</strong> 10,579 recorded frames, identical detections, distances and annotated images, down to the bytes of the JPEG.</li>
+  <li><strong>Roomba driver:</strong> a fake Roomba on a virtual serial port, with scripted bumps, cliffs, bad checksums and dropped streams. Both drivers sent the robot exactly the same bytes.</li>
+</ul>
+
+<h2>Identical is harder than it sounds</h2>
+
+<p>Python, NumPy and OpenCV each have their own quirks, and matching them bit for bit meant copying them on purpose:</p>
+
+<ul>
+  <li><strong>Rounding:</strong> to two decimal places, NumPy rounds 2.675 to 2.68, while Python's own <code>round</code> gives 2.67. The Rust code has to know which one the Python called.</li>
+  <li><strong>Distances:</strong> Python's <code>math.hypot</code> is not the C library's <code>hypot</code>; for some inputs they differ in the last bit. That's enough to nudge a decision the other way.</li>
+  <li><strong>Order matters:</strong> OpenCV numbers connected blobs in a particular order and NumPy sorts with a particular algorithm. Both had to be reproduced, or ties came out differently.</li>
+  <li><strong>Missing pieces:</strong> ROS 2's Rust library has no TF (the transforms between the robot's coordinate frames), so it got a port of ROS's own that gives bit-identical results. NVIDIA ships no Rust bindings for cuVSLAM's messages either, so those are generated from the message definitions.</li>
+  <li><strong>The linker:</strong> the standard Linux linker took over ten minutes to link one node on the Jetson. Switching to <em>mold</em> fixed that.</li>
+</ul>
+
+<aside class="callout">
+  <p class="callout__title">Not on the road yet</p>
+  <p>Every number here comes from recorded drives and a simulated Roomba. The Rust nodes are now the default, so the next real drive will be the first on Rust. If anything misbehaves, <code>rust_nodes:=false</code> brings back the Python versions.</p>
+</aside>
+
+<p>The code is in <a href="https://github.com/Brett-D/roomba-jetson-stack">roomba-jetson-stack</a>, in <code>src/roomba_rs</code>, along with the comparison tools in <code>tools/</code>.</p>

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>From Python to Rust: same robot, a fraction of the CPU · Brett&#x27;s Box</title>
+<meta name="description" content="Ten of the robot&#x27;s ROS 2 nodes now have Rust versions, each checked against the Python original output for output. The five busiest went from about 1.3 CPU cores to under a fifth of one.">
+<link rel="canonical" href="https://brettsbox.com/blog/python-to-rust/">
+<meta property="og:site_name" content="Brett&#x27;s Box">
+<meta property="og:title" content="From Python to Rust: same robot, a fraction of the CPU · Brett&#x27;s Box">
+<meta property="og:description" content="Ten of the robot&#x27;s ROS 2 nodes now have Rust versions, each checked against the Python original output for output. The five busiest went from about 1.3 CPU cores to under a fifth of one.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://brettsbox.com/blog/python-to-rust/">
+<meta property="og:image" content="https://brettsbox.com/assets/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#06080b">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/atom+xml" title="Brett's Box build log" href="/feed.xml">
+<link rel="preload" href="/assets/fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/style.css?v=1d13bf9a69">
+<script>document.documentElement.className = 'js';</script>
+<script src="/app.js?v=14adaaca4a" defer></script>
+</head>
+<body class="page-post">
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="progress" aria-hidden="true"></div>
+<header class="site-header">
+  <a class="round" href="/blog/" aria-label="Build log"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path class="ecg-base" d="M1 13h5l2.5-6 4 12 3-9 2 3H23"/><path class="ecg" d="M1 13h5l2.5-6 4 12 3-9 2 3H23" pathLength="100"/></svg></a>
+  <div class="capsule">
+    <a class="brand" href="/" aria-label="Brett's Box, home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2.5" y="2.5" width="27" height="27" rx="8" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="16" cy="16" r="6.5" fill="currentColor"/><path class="brand__notch" d="M16 9.5v3" stroke-width="2.4" stroke-linecap="round"/></svg></a>
+    <nav class="site-nav" id="site-nav" aria-label="Main">
+      <ul>
+<li><a href="/">Home</a></li>
+<li><a href="/roomba/">Roomba</a></li>
+<li><a href="/blog/" aria-current="page">Build log</a></li>
+<li><a href="/homelab/">Homelab</a></li>
+<li><a href="/printing/">3D printing</a></li>
+<li><a href="/about/">About</a></li>
+      </ul>
+    </nav>
+  </div>
+  <a class="chip chip--feed" href="/feed.xml"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1.4" fill="currentColor"/></svg>Feed</a>
+  <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav"><span class="nav-toggle__bars" aria-hidden="true"></span><span class="nav-toggle__label">Menu</span></button>
+</header>
+<main id="main">
+<article class="post">
+  <header class="hero hero--post" data-scenes="robot">
+    <canvas class="hero__cloud" aria-hidden="true"></canvas>
+    <canvas class="hero__hud" aria-hidden="true"></canvas>
+    <div class="hero__shade" aria-hidden="true"></div>
+    <div class="frame" aria-hidden="true">
+      <svg><rect x="0" y="0" width="100%" height="100%" rx="18" pathLength="1"/></svg>
+      <i class="mark mark--tl"></i><i class="mark mark--tr"></i><i class="mark mark--bl"></i><i class="mark mark--br"></i><i class="ticks"></i><i class="ticks ticks--b"></i>
+    </div>
+    <div class="readout readout--l" aria-hidden="true"></div>
+    <div class="readout readout--r" aria-hidden="true"></div>
+    <div class="hero__copy">
+      <p class="kicker kicker--cursor">// <a href="/blog/">Build log</a> · Entry 08 / 08</p>
+      <h1 class="hero__title"><span class="ln"><span>From Python to Rust: same robot, a fraction of the CPU</span></span></h1>
+      <p class="hero__lede">Ten of the robot's ROS 2 nodes now have Rust versions, each checked against the Python original output for output. The five busiest went from about 1.3 CPU cores to under a fifth of one.</p>
+      <ul class="post-meta">
+        <li><time datetime="2026-11-15">15 November 2026</time></li>
+        <li>4 min read</li>
+        <li><ul class="tags"><li class="tag">roomba</li><li class="tag">rust</li><li class="tag">ros2</li></ul></li>
+      </ul>
+    </div>
+  </header>
+  <div class="prose">
+<p>The Jetson was working too hard. On a typical exploration run its load average sat around 20 on six cores: far more work waiting than it had cores to run it on. Most of the heavy lifting was already native code: Nav2 and RTAB-Map are C++, and cuVSLAM and nvblox run on the GPU. The overhead was in the glue I'd written myself in Python. The web dashboard, the Roomba driver, the odometry watchdog and the obstacle detector each used a quarter to a half of a CPU core.</p>
+
+<p>So the rule for this project is now Rust wherever it's practical. Rather than redesign anything, each Python node gets a Rust twin that is a drop-in replacement: same node name, topics, parameters, services and even log lines. One launch argument, <code>rust_nodes</code>, picks which set runs.</p>
+
+<h2>The results</h2>
+
+<p>CPU use is in percent of one core, measured on the Jetson with both versions running side by side on the same input:</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th scope="col">Node</th><th scope="col">Python</th><th scope="col">Rust</th></tr></thead>
+  <tbody>
+    <tr><td>Web dashboard server</td><td>48%</td><td><strong>10%</strong></td></tr>
+    <tr><td>Roomba driver</td><td>31%</td><td><strong>2.4%</strong></td></tr>
+    <tr><td>Odometry watchdog</td><td>26%</td><td><strong>2.2%</strong></td></tr>
+    <tr><td>Floor obstacles</td><td>19%</td><td><strong>2.5%</strong></td></tr>
+    <tr><td>Wheel and gyro prep for the EKF</td><td>8.7%</td><td><strong>1.2%</strong></td></tr>
+    <tr><td>Explorer and nav coach</td><td colspan="2">Rust uses about a sixth</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>Add up the first five and they went from about <strong>132% of a core to 18%</strong>, giving back more than a whole core. Memory dropped too: the dashboard server peaks at 42 MB instead of 165 MB, and the driver and the watchdog at under 30 MB instead of about 75 MB.</p>
+
+<p>The person detector, which finds people in the camera image with a TensorRT network on the GPU and works out how far away they are, is measured per camera frame instead. Its CPU time per frame fell from 45 to 13 ms, the median time from frame to result from 56 to 42 ms, and its memory from 649 to 448 MB. The map gap filler and the keep-out zones node were ported as well, so ten nodes now have Rust versions.</p>
+
+<h2>Same output, or it doesn't ship</h2>
+
+<p>Faster is easy to claim. The hard rule was that every Rust node has to give <em>exactly</em> the same output as the Python one, and that has to be proven, not eyeballed. Each port came with a test that feeds both versions identical input and compares everything they send out:</p>
+
+<ul>
+  <li><strong>Odometry watchdog:</strong> a 35-minute recorded drive (413,000 IMU samples and 30,700 camera poses) through both. Both forwarded the same 26,084 poses, made the same 87 recoveries and printed the same 577 log lines. The largest difference in any position was about 0.000000000003 m. The same check passed on 17 runs, including injected faults such as tracking loss and a slow reset.</li>
+  <li><strong>Map gap filler:</strong> 1,467 recorded and made-up maps, 23.5 million cells, identical.</li>
+  <li><strong>Explorer:</strong> the same goals on 572 maps from real drives, including the bump keep-out marks and retries.</li>
+  <li><strong>Person detector:</strong> 10,579 recorded frames, identical detections, distances and annotated images, down to the bytes of the JPEG.</li>
+  <li><strong>Roomba driver:</strong> a fake Roomba on a virtual serial port, with scripted bumps, cliffs, bad checksums and dropped streams. Both drivers sent the robot exactly the same bytes.</li>
+</ul>
+
+<h2>Identical is harder than it sounds</h2>
+
+<p>Python, NumPy and OpenCV each have their own quirks, and matching them bit for bit meant copying them on purpose:</p>
+
+<ul>
+  <li><strong>Rounding:</strong> to two decimal places, NumPy rounds 2.675 to 2.68, while Python's own <code>round</code> gives 2.67. The Rust code has to know which one the Python called.</li>
+  <li><strong>Distances:</strong> Python's <code>math.hypot</code> is not the C library's <code>hypot</code>; for some inputs they differ in the last bit. That's enough to nudge a decision the other way.</li>
+  <li><strong>Order matters:</strong> OpenCV numbers connected blobs in a particular order and NumPy sorts with a particular algorithm. Both had to be reproduced, or ties came out differently.</li>
+  <li><strong>Missing pieces:</strong> ROS 2's Rust library has no TF (the transforms between the robot's coordinate frames), so it got a port of ROS's own that gives bit-identical results. NVIDIA ships no Rust bindings for cuVSLAM's messages either, so those are generated from the message definitions.</li>
+  <li><strong>The linker:</strong> the standard Linux linker took over ten minutes to link one node on the Jetson. Switching to <em>mold</em> fixed that.</li>
+</ul>
+
+<aside class="callout">
+  <p class="callout__title">Not on the road yet</p>
+  <p>Every number here comes from recorded drives and a simulated Roomba. The Rust nodes are now the default, so the next real drive will be the first on Rust. If anything misbehaves, <code>rust_nodes:=false</code> brings back the Python versions.</p>
+</aside>
+
+<p>The code is in <a href="https://github.com/Brett-D/roomba-jetson-stack">roomba-jetson-stack</a>, in <code>src/roomba_rs</code>, along with the comparison tools in <code>tools/</code>.</p>
+
+  </div>
+  <nav class="wrap post-nav" aria-label="More build-log entries">
+    <a class="post-nav__link post-nav__link--Previous" href="/blog/basalt-vs-cuvslam/"><span class="post-nav__dir">Previous · #07</span><span class="post-nav__title">Basalt vs cuVSLAM, round one: CPU or GPU?</span></a>
+    
+  </nav>
+</article>
+
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="footer__mark" aria-hidden="true">Brett's Box</p>
+    <div class="footer__row">
+      <p class="footer__about">A maker's lab notebook: robots, homelab and 3D printing. Built with GitHub Copilot, no trackers.</p>
+      <ul class="footer__links">
+        <li><a href="https://github.com/Brett-D">GitHub ↗</a></li>
+        <li><a href="/feed.xml">Atom feed</a></li>
+        <li><a href="#main">Back to top ↑</a></li>
+      </ul>
+    </div>
+    <p class="footer__fine"><span>© 2026 Brett</span><span>Built with GitHub Copilot</span><span>No trackers</span></p>
+  </div>
+</footer>
+</body>
+</html>
