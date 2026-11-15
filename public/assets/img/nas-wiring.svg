@@ -39,7 +39,6 @@
   <!-- ===== ThinkCentre ===== -->
   <rect x="60" y="170" width="520" height="520" rx="18" class="blk"/>
   <text x="88" y="212" class="k">THINKCENTRE TINY · M920Q</text>
-  <text x="88" y="244" class="s">6 cores, 32 GB RAM, Proxmox VE</text>
 
   <rect x="88" y="270" width="464" height="78" rx="10" class="sub"/>
   <text x="108" y="300" class="n">M.2 SLOT 1</text>
@@ -48,7 +47,7 @@
   <rect x="88" y="362" width="464" height="118" rx="10" class="sub" stroke="#e0483e" stroke-opacity=".7"/>
   <text x="108" y="392" class="n">M.2 SLOT 2</text>
   <text x="108" y="423" class="h" font-size="21">RIITOP M.2-to-SATA</text>
-  <text x="108" y="455" class="s">ASM1166 · PCIe 3.0 ×2 in, 6 SATA out</text>
+  <text x="108" y="455" class="s">PCIe 3.0 ×2 in, 6 SATA out</text>
 
   <rect x="88" y="494" width="464" height="78" rx="10" class="sub"/>
   <text x="108" y="524" class="n">PCIe RISER</text>
@@ -62,7 +61,7 @@
   <path d="M552 533 H592" fill="none" stroke="#7c8692" stroke-width="2" marker-end="url(#arr)"/>
   <text x="600" y="539" class="n">NETWORK</text>
   <path d="M552 625 H592" fill="none" stroke="#7c8692" stroke-width="2" marker-end="url(#arr)"/>
-  <text x="600" y="631" class="n">FAN</text>
+  <text x="600" y="631" class="n">BLOWER OVER THE X710</text>
   <path d="M320 690 V730" fill="none" stroke="#7c8692" stroke-width="2" marker-end="url(#arr)" transform="rotate(180 320 710)"/>
   <text x="338" y="732" class="n">OWN POWER ADAPTER</text>
 
@@ -80,7 +79,7 @@
   <!-- ===== Drive cage ===== -->
   <rect x="1020" y="170" width="520" height="520" rx="18" class="blk"/>
   <text x="1048" y="212" class="k">ROSEWILL RSV-SATA-CAGE-34</text>
-  <text x="1048" y="244" class="s">Four hot-swap bays and the 120 mm fan, one backplane</text>
+  <text x="1048" y="244" class="s">Four hot-swap bays on one backplane</text>
   <g>
     <rect x="1048" y="270" width="464" height="62" rx="10" class="sub"/>
     <rect x="1048" y="342" width="464" height="62" rx="10" class="sub"/>
@@ -100,9 +99,9 @@
     <rect x="1006" y="509" width="28" height="16" rx="3" class="port"/>
   </g>
   <rect x="1048" y="566" width="464" height="98" rx="10" class="sub"/>
-  <text x="1068" y="596" class="n">DRIVES · TWO ZFS MIRRORS</text>
-  <text x="1068" y="626" class="s">2 × Seagate Exos 7E8 6 TB</text>
-  <text x="1068" y="652" class="s">2 × Seagate Barracuda 2 TB · ≈ 8 TB usable</text>
+  <text x="1068" y="596" class="n">BACKPLANE</text>
+  <text x="1068" y="626" class="s">4 × SATA in, 2 × Molex in</text>
+  <text x="1068" y="652" class="s">Also powers the 120 mm fan</text>
 
   <!-- Molex inputs on the backplane, with the plugs mated below them -->
   <rect x="1150" y="690" width="48" height="10" fill="#3a4552"/>
@@ -116,22 +115,18 @@
     <path d="M594 432 C 790 432, 810 517, 1006 517" class="sata"/>
   </g>
   <text x="800" y="262" class="n" text-anchor="middle" fill="#9fd8ff">4 × SATA · 6 Gb/s</text>
-  <text x="800" y="586" class="n" text-anchor="middle" font-size="14">UNDER THE THINKCENTRE,</text>
-  <text x="800" y="608" class="n" text-anchor="middle" font-size="14">THROUGH THE 35 MM GAP</text>
 
   <!-- ===== Power supply ===== -->
   <rect x="580" y="790" width="440" height="190" rx="18" class="blk"/>
   <text x="608" y="832" class="k">ESGAMING 300 W</text>
-  <text x="608" y="864" class="s">Flex-ATX (1U), fully modular</text>
-  <text x="608" y="892" class="s">Behind the drive cage</text>
   <!-- AC in -->
   <path d="M560 935 H600" fill="none" stroke="#7c8692" stroke-width="2" marker-end="url(#arr)" transform="rotate(180 580 935)"/>
   <text x="608" y="941" class="n">AC IN</text>
   <!-- modular sockets -->
   <rect x="880" y="812" width="118" height="44" rx="6" class="sub"/>
-  <text x="939" y="840" class="m" font-size="15" font-weight="600" fill="#e7ecf1" text-anchor="middle">MOLEX</text>
+  <text x="939" y="840" class="m" font-size="15" font-weight="600" fill="#e7ecf1" text-anchor="middle">SATA</text>
   <rect x="880" y="912" width="118" height="44" rx="6" class="sub"/>
-  <text x="939" y="940" class="m" font-size="15" font-weight="600" fill="#e7ecf1" text-anchor="middle">24-PIN</text>
+  <text x="939" y="940" class="m" font-size="15" font-weight="600" fill="#e7ecf1" text-anchor="middle">P24</text>
 
   <!-- Molex wires: one cable through plug A and on to plug B -->
   <g class="w">
@@ -144,7 +139,7 @@
   <text x="1174" y="730" class="m" font-size="15" font-weight="600" fill="#2a2620" text-anchor="middle">MOLEX A</text>
   <rect x="1340" y="700" width="92" height="48" rx="6" fill="#e8e3d6" stroke="#9a958a" stroke-width="2"/>
   <text x="1386" y="730" class="m" font-size="15" font-weight="600" fill="#2a2620" text-anchor="middle">MOLEX B</text>
-  <text x="1280" y="784" class="n" font-size="14" text-anchor="middle">ONE CABLE, TWO PLUGS</text>
+  <text x="1280" y="784" class="n" font-size="14" text-anchor="middle">ONE MOLEX CABLE, TWO PLUGS</text>
 
   <!-- switch on the 24-pin socket -->
   <g class="w">
@@ -156,7 +151,7 @@
   <path d="M1124 889 L1238 858" stroke="#e7ecf1" stroke-width="3" stroke-linecap="round"/>
   <text x="1185" y="842" class="n" text-anchor="middle" fill="#e7ecf1">SWITCH</text>
   <text x="1290" y="902" class="s" font-size="18">Closed = on: PS_ON to ground.</text>
-  <text x="1290" y="928" class="s" font-size="18">Just two wires on the 24-pin.</text>
+  <text x="1290" y="928" class="s" font-size="18">Just two wires on P24.</text>
 
   <text x="60" y="1010" class="n" font-size="15">Schematic, not to scale. The ThinkCentre and the drive cage share no power: only data crosses between them.</text>
 </svg>
