@@ -224,6 +224,23 @@ class Renderer:
             f"<figcaption>{self._figno()}{caption or flow['caption']}</figcaption></figure>"
         )
 
+    def sc_model(self, key: str, poster: str, alt: str, caption: str = "") -> str:
+        """Interactive WebGL model (theme static/{key}3d.js); the poster shows until it starts, and in feeds."""
+        cap = f"<figcaption>{self._figno()}{caption}</figcaption>" if caption else ""
+        path = PUBLIC / "assets" / "img" / poster
+        img = ""
+        if path.exists():
+            w, h = image_size(path)
+            img = f'<img class="model__poster" src="/assets/img/{poster}" alt="{esc(alt)}" width="{w}" height="{h}" loading="lazy" decoding="async">'
+        if self.feed:
+            return f"<figure>{img}{cap}</figure>"
+        script = f"{key}3d.js"
+        return (
+            f'<figure class="figure figure--model" data-reveal><div class="model" data-model="{esc(key)}">{img}'
+            f'<canvas class="model__canvas" tabindex="0" role="img" aria-label="{esc(alt)} Drag or use the arrow keys to turn it."></canvas></div>'
+            f'{cap}<script src="/{script}?v={asset_version(script)}" defer></script></figure>'
+        )
+
     def sc_posts(self, tag: str = "", limit: str = "") -> str:
         selected = [p for p in reversed(self.posts) if not tag or tag in p["tags"]]
         if limit:

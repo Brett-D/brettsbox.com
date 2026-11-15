@@ -33,11 +33,11 @@ site/
   themes/graphite/
     templates/             base, home, page, blog, post
     partials/              small snippets (post list item, project card, nav item, tag, pill, ...)
-    static/                style.css, app.js (point-cloud heroes), favicon.svg (copied to the root of public/)
+    static/                style.css, app.js (point-cloud heroes), nas3d.js (homelab 3D model), favicon.svg (copied to the root of public/)
 public/
   assets/                  committed by hand: img/, media/ (demo video + poster), fonts/
   404.html                 committed by hand, untouched by the build
-  everything else          GENERATED: do not edit by hand (pages, feed.xml, style.css, app.js,
+  everything else          GENERATED: do not edit by hand (pages, feed.xml, style.css, app.js, nas3d.js,
                            favicon.svg, and the lab/ and blueprint/ redirects)
 archive/lab/, blueprint/   retired designs (not built or served)
 deploy/                    nginx config, container setup and the pull timer
@@ -92,6 +92,7 @@ Use these inside post and page bodies.
 | `{{video:vslam}}` | Muted, looping demo video (defined in `site.json`); autoplays on screen unless the visitor prefers reduced motion |
 | `{{flow:pipeline}}` | Step-by-step flow diagram (defined under `flows` in `site.json`) |
 | `{{posts:tag\|limit}}` | List of posts, optionally filtered by tag |
+| `{{model:nas\|poster.webp\|alt text\|caption}}` | Interactive WebGL model from the theme's `static/nas3d.js` (orbit, explode, tap a part for details); the poster image shows until it starts, without WebGL and in feeds |
 
 ### Images and video
 
