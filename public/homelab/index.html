@@ -70,52 +70,31 @@
 
 <section class="section" aria-labelledby="box">
 <h2 id="box">The box</h2>
+<p>The whole server in 3D, built from the same measurements as its printed case. Drag to turn it, tap any part to see what it is, or press <em>Explode</em> to pull it apart and follow the cables.</p>
+<figure class="figure figure--model" data-reveal><div class="model" data-model="nas"><img class="model__poster" src="/assets/img/nas-3d-poster.webp" alt="3D model of the homelab NAS: the printed case, the drive cage with four drives, the ThinkCentre with its NVMe drive, SATA adapter and 10 GbE card, the power supply behind the cage, and the SATA and Molex cables between them." width="1600" height="1000" loading="lazy" decoding="async"><canvas class="model__canvas" tabindex="0" role="img" aria-label="3D model of the homelab NAS: the printed case, the drive cage with four drives, the ThinkCentre with its NVMe drive, SATA adapter and 10 GbE card, the power supply behind the cage, and the SATA and Molex cables between them. Drag or use the arrow keys to turn it."></canvas></div><figcaption><span class="fig-no">Fig. 01</span> Interactive 3D model. Sizes come from the case's design script; cable routes are approximate.</figcaption><script src="/nas3d.js?v=535f2b5f5f" defer></script></figure>
 <dl class="spec-grid">
-  <div><dt>Hardware</dt><dd>Lenovo ThinkCentre Tiny (M920q), 6 cores, 32 GB RAM</dd></div>
   <div><dt>Hypervisor</dt><dd>Proxmox VE, running a mix of virtual machines and lightweight containers</dd></div>
-  <div><dt>Storage</dt><dd>ZFS on four hard drives in two mirrored pairs, about 8 TB usable. <a href="#storage">More below</a></dd></div>
-  <div><dt>Network</dt><dd>OPNsense firewall VM with separate, segmented networks, and an Intel X710 10 GbE card</dd></div>
+  <div><dt>Storage</dt><dd>One ZFS pool of two mirrored pairs: about 8 TB usable, half of it used. <a href="#mirrors">Why mirrors</a></dd></div>
+  <div><dt>Network</dt><dd>OPNsense firewall VM with separate, segmented networks</dd></div>
 </dl>
 </section>
 
 <section class="section" aria-labelledby="storage">
 <h2 id="storage">Inside the box</h2>
-<p>A ThinkCentre Tiny has no room for 3.5-inch hard drives, so they live in a four-bay hot-swap cage underneath it, with their own power supply behind the cage. Everything sits in a case I <a href="/printing/#nas-enclosure">designed and printed</a> for it.</p>
-<dl class="spec-grid">
-  <div><dt>System drive</dt><dd>512 GB M.2 NVMe SSD for Proxmox itself, also on ZFS</dd></div>
-  <div><dt>Big pair</dt><dd>2 × Seagate Exos 7E8 6 TB: 7200 rpm enterprise drives built to run 24/7</dd></div>
-  <div><dt>Small pair</dt><dd>2 × Seagate Barracuda 2 TB, 7200 rpm desktop drives</dd></div>
-  <div><dt>Pool</dt><dd>One ZFS pool made of the two mirrors: about 8 TB usable, half of it used</dd></div>
-  <div><dt>SATA adapter</dt><dd>RIITOP M.2 to SATA: an ASMedia ASM1166 chip, six SATA ports from two PCIe 3.0 lanes</dd></div>
-  <div><dt>Drive cage</dt><dd>Rosewill RSV-SATA-Cage-34: four hot-swap 3.5-inch trays and a 120 mm fan</dd></div>
-  <div><dt>Drive power</dt><dd>ESGAMING 300 W Flex-ATX supply, fully modular, with a switch on its 24-pin socket</dd></div>
-  <div><dt>10 GbE</dt><dd>Intel X710 network card on the ThinkCentre's PCIe riser</dd></div>
-  <div><dt>Case</dt><dd>3D-printed in two parts, 187 × 208 × 263 mm, holding the cage with the ThinkCentre on top</dd></div>
-</dl>
+<p>A ThinkCentre Tiny has no room for 3.5-inch hard drives, so they live in a Rosewill hot-swap cage, made to fill three 5.25-inch bays where a tower PC's DVD drives used to go. With no tower to put it in, a case I <a href="/printing/#nas-enclosure">designed and printed</a> does that job: the cage slides into the bottom, the ThinkCentre sits on ledges above it, and the drives' own power supply stands behind the cage.</p>
 <div class="figure-pair">
-<figure class="figure " data-reveal><a class="figure__frame" href="/assets/img/nas-front-lit.webp" title="Open full-size image"><img src="/assets/img/nas-front-lit.webp" alt="Front of the homelab server: a Lenovo ThinkCentre Tiny on top of four black hot-swap drive trays, each with a blue activity light, in a grey 3D-printed case with hexagonal vents." width="1200" height="900" loading="lazy" decoding="async"></a><figcaption><span class="fig-no">Fig. 01</span> The front: the ThinkCentre on top, four drive bays with their lights on below.</figcaption></figure>
-<figure class="figure " data-reveal><a class="figure__frame" href="/assets/img/nas-rear-inside.webp" title="Open full-size image"><img src="/assets/img/nas-rear-inside.webp" alt="Looking into the back of the case: network cables plugged into the 10 GbE card&#x27;s ports, a small blue USB fan speed regulator with a knob, and the power supply&#x27;s fan grille behind them." width="1200" height="900" loading="lazy" decoding="async"></a><figcaption><span class="fig-no">Fig. 02</span> The back: the 10 GbE card's ports, the USB fan regulator and the power supply's fan.</figcaption></figure>
+<figure class="figure " data-reveal><a class="figure__frame" href="/assets/img/nas-front-lit.webp" title="Open full-size image"><img src="/assets/img/nas-front-lit.webp" alt="Front of the homelab server: a Lenovo ThinkCentre Tiny on top of four black hot-swap drive trays, each with a blue activity light, in a grey 3D-printed case with hexagonal vents." width="1200" height="900" loading="lazy" decoding="async"></a><figcaption><span class="fig-no">Fig. 02</span> The front: the ThinkCentre on top, four drive bays with their lights on below.</figcaption></figure>
+<figure class="figure " data-reveal><a class="figure__frame" href="/assets/img/nas-rear-inside.webp" title="Open full-size image"><img src="/assets/img/nas-rear-inside.webp" alt="Looking down at the back of the case: network cables plugged into the 10 GbE card&#x27;s ports, a small blue USB fan speed regulator with a knob, and the small fan on top of the power supply." width="1200" height="900" loading="lazy" decoding="async"></a><figcaption><span class="fig-no">Fig. 03</span> From above, at the back: the 10 GbE card's ports, the USB fan regulator and the fan on top of the power supply.</figcaption></figure>
 </div>
 
-<h3>Take it apart</h3>
-<p>Here's the whole thing in 3D, built from the same measurements as the printed case. Drag to turn it, tap any part to see what it is, or press <em>Explode</em> to pull the layers apart and follow the cables.</p>
-<figure class="figure figure--model" data-reveal><div class="model" data-model="nas"><img class="model__poster" src="/assets/img/nas-3d-poster.webp" alt="3D model of the homelab NAS: the printed case, the drive cage with four drives, the ThinkCentre with its NVMe drive, SATA adapter and 10 GbE card, the power supply behind the cage, and the SATA and Molex cables between them." width="1600" height="1000" loading="lazy" decoding="async"><canvas class="model__canvas" tabindex="0" role="img" aria-label="3D model of the homelab NAS: the printed case, the drive cage with four drives, the ThinkCentre with its NVMe drive, SATA adapter and 10 GbE card, the power supply behind the cage, and the SATA and Molex cables between them. Drag or use the arrow keys to turn it."></canvas></div><figcaption><span class="fig-no">Fig. 03</span> Interactive 3D model. Sizes come from the case's design script; cable routes and the power supply's exact position are approximate.</figcaption><script src="/nas3d.js?v=cf6b30e4e3" defer></script></figure>
-
 <h3>SATA from an M.2 slot</h3>
-<p>The Tiny has no way to connect four hard drives on its own, so they go through a <strong>RIITOP M.2-to-SATA adapter</strong>. It fits one of the two M.2 slots on the Tiny's underside, where the NVMe system drive takes the other, and an ASMedia <strong>ASM1166</strong> chip turns that slot's two PCIe 3.0 lanes into six SATA ports, four of which run to the drive cage. It's a plain AHCI controller, so Proxmox drives it with the standard Linux driver and ZFS sees each disk directly, with no RAID card in between. That matters, because ZFS wants to manage the disks itself.</p>
+<p>The drives connect through an M.2-to-SATA adapter in the second M.2 slot under the ThinkCentre. Its ASM1166 chip is a plain AHCI controller, so Proxmox uses the standard Linux driver and ZFS sees each disk directly, with no RAID card in between. That matters, because ZFS wants to manage the disks itself.</p>
 
 <h3>Wiring</h3>
 <figure class="figure " data-reveal><a class="figure__frame" href="/assets/img/nas-wiring.svg" title="Open full-size image"><img src="/assets/img/nas-wiring.webp" alt="Wiring diagram. Four SATA data cables run from ports 1 to 4 of the M.2-to-SATA adapter in the ThinkCentre to bays 1 to 4 of the drive cage; ports 5 and 6 are spare. One Molex cable from the power supply, with 12 volt, 5 volt and two ground wires, passes through Molex plug A and ends at plug B on the cage&#x27;s backplane. A switch connects the PS_ON and ground wires of the supply&#x27;s 24-pin socket. The ThinkCentre has its own power adapter, and the 10 GbE card and a USB fan speed regulator hang off it." width="1600" height="1040" loading="lazy" decoding="async"></a><figcaption><span class="fig-no">Fig. 04</span> Data and power. The ThinkCentre and the drives only share the SATA cables; each has its own power.</figcaption></figure>
-<p>The drives don't draw power from the ThinkCentre at all. The <strong>ESGAMING 300 W</strong> is a small Flex-ATX supply, the kind made for 1U servers, and it's fully modular, so only one cable is plugged in: a Molex cable with two plugs that feeds both of the cage's power inputs. That's 12 V for the drive motors and 5 V for their electronics.</p>
-<p>A computer's power supply only turns on when the motherboard tells it to, by connecting the green <em>PS_ON</em> wire to ground. There's no motherboard here, so a switch does that job instead: two wires on the supply's 24-pin socket, and nothing else. One catch is that the drives have to be on before the ThinkCentre starts, or ZFS won't find them when it boots.</p>
+<p>The drives don't draw power from the ThinkCentre at all. A computer's power supply only turns on when the motherboard tells it to, by connecting the green <em>PS_ON</em> wire to ground. There's no motherboard here, so a switch does that job instead: two wires on the supply's 24-pin socket, and nothing else. One catch is that the drives have to be on before the ThinkCentre starts, or ZFS won't find them when it boots.</p>
 
-<h3>The drive cage</h3>
-<p>The <strong>Rosewill RSV-SATA-Cage-34</strong> is designed to fill three 5.25-inch bays in a desktop tower, where DVD drives used to go, and turn them into four hot-swap trays for 3.5-inch drives. Each tray has an activity light, a 120 mm fan at the back pulls air over all four drives, and the cage takes its power through two Molex plugs. A failed drive slides out of the front without taking anything apart. With no tower to put it in, the printed case does that job: the cage slides into the bottom and the Tiny sits on ledges above it, with room underneath for the SATA cables.</p>
-
-<h3>10 GbE and the fan knob</h3>
-<p>An <strong>Intel X710</strong> network card sits on the ThinkCentre's PCIe riser, so the server has 10 gigabit Ethernet, ten times the speed of its built-in port. Its ports come out of the back next to a little <strong>USB fan speed regulator</strong>: plugged into a USB port, its knob sets how fast a fan spins.</p>
-
-<h3>Why two mirrors?</h3>
+<h3 id="mirrors">Why two mirrors?</h3>
 <p>In each pair, both drives hold the same data, so either one can die without losing anything. ZFS spreads files across the two pairs, so together they behave like one big drive.</p>
 <ul>
   <li><strong>Mixed sizes are fine.</strong> RAIDZ, ZFS's version of RAID 5, would treat all four drives as 2 TB drives and leave about 6 TB usable. As two mirrors, each pair uses its full size: 6 + 2 = 8 TB.</li>

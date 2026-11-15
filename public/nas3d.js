@@ -36,9 +36,11 @@
       -dot(x, eye), -dot(y, eye), -dot(z, eye), 1]);
   }
   const translate = (t) => new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, t[0], t[1], t[2], 1]);
-  function spinY(c, a, t) { // rotate about the y axis through c, then translate by t
+  function spinAbout(c, a, t, axis) { // rotate about the y or z axis through c, then translate by t
     const co = Math.cos(a), si = Math.sin(a);
-    const r = new Float32Array([co, 0, -si, 0, 0, 1, 0, 0, si, 0, co, 0, 0, 0, 0, 1]);
+    const r = axis === 'z'
+      ? new Float32Array([co, si, 0, 0, -si, co, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
+      : new Float32Array([co, 0, -si, 0, 0, 1, 0, 0, si, 0, co, 0, 0, 0, 0, 1]);
     return mat4mul(translate(add(c, t)), mat4mul(r, translate(mul(c, -1))));
   }
 
@@ -142,20 +144,20 @@
   const CAGE_TOP = 129, TINY_Z = 164, H = 202, D = 260, SLEEVE = 215;
   const RIITOP_PORTS = [118, 107, 96, 85]; // y of adapter ports 1-4 (approximate)
   const ENTS = [
-    ['tiny', 'Compute', 'Lenovo ThinkCentre Tiny', 'The server itself: six cores and 32 GB of RAM running Proxmox. It has its own power adapter.', '#8b95a3'],
-    ['nvme', 'Storage', '512 GB NVMe SSD', "Proxmox's system drive, in one of the two M.2 slots on the ThinkCentre's underside.", '#6f7f74'],
-    ['riitop', 'Storage', 'M.2-to-SATA adapter', 'RIITOP, with an ASMedia ASM1166 chip: two PCIe 3.0 lanes in, six SATA ports out. Four are in use.', '#e0483e'],
-    ['nic', 'Network', 'Intel X710 10 GbE card', 'On the PCIe riser inside the ThinkCentre. Its ports come out of the back through a yellow bracket.', '#e8c547'],
+    ['tiny', 'Compute', 'Lenovo ThinkCentre Tiny', 'The server itself: an M920q with six cores and 32 GB of RAM, running Proxmox VE. It has its own power adapter.', '#8b95a3'],
+    ['nvme', 'Storage', '512 GB NVMe SSD', "Proxmox's system drive, also on ZFS, in one of the two M.2 slots on the ThinkCentre's underside.", '#6f7f74'],
+    ['riitop', 'Storage', 'M.2-to-SATA adapter', 'RIITOP, in the other M.2 slot. Its ASMedia ASM1166 chip turns two PCIe 3.0 lanes into six SATA ports; four are in use.', '#e0483e'],
+    ['nic', 'Network', 'Intel X710 10 GbE card', 'On the PCIe riser inside the ThinkCentre: 10 gigabit Ethernet, ten times its built-in port. Its ports come out of the back through a yellow bracket.', '#e8c547'],
     ['usb', 'Cooling', 'USB fan speed regulator', 'Plugged into a USB port on the back. Its knob sets how fast a fan spins.', '#3f8de0'],
     ['sata', 'Data', 'SATA data cables', 'Four cables from the adapter, through the 35 mm gap under the ThinkCentre and down to the back of the drive cage.', '#9fd8ff'],
-    ['cage', 'Storage', 'Rosewill drive cage', 'RSV-SATA-Cage-34: four hot-swap trays with activity lights, and a backplane with four SATA and two Molex inputs.', '#5b6470'],
-    ['drives', 'Storage', 'Four hard drives', 'Two Seagate Exos 6 TB and two Barracuda 2 TB, set up as two ZFS mirrors: about 8 TB usable.', '#b9c0c8'],
+    ['cage', 'Storage', 'Rosewill drive cage', 'RSV-SATA-Cage-34: four hot-swap trays with activity lights, a 120 mm fan, and a backplane with four SATA and two Molex inputs. A failed drive slides out of the front.', '#5b6470'],
+    ['drives', 'Storage', 'Four hard drives', 'Two Seagate Exos 7E8 6 TB, 7200 rpm enterprise drives built to run 24/7, and two Seagate Barracuda 2 TB. Set up as two ZFS mirrors: about 8 TB usable.', '#b9c0c8'],
     ['fan', 'Cooling', '120 mm cage fan', "Pulls air past the drives and out through the rear grille. It runs off the cage's backplane.", '#6b7480'],
-    ['psu', 'Power', 'ESGAMING 300 W power supply', 'Flex-ATX (1U) and fully modular, standing on its edge behind the drive cage. Only the Molex cable is fitted, so it powers the drive cage and nothing else. Its exact spot in the model is approximate.', '#7c8692'],
+    ['psu', 'Power', 'ESGAMING 300 W power supply', "A small Flex-ATX (1U) supply, fully modular. It stands on end on the case floor behind the drive cage, beside the cage's fan, with its own small fan on top. Only the Molex cable is fitted, so it powers the drive cage and nothing else.", '#7c8692'],
     ['molex', 'Power', 'Molex power cable', "12 V (yellow) for the drive motors, 5 V (red) for their electronics and two grounds, daisy-chained to both of the cage's Molex inputs.", '#ffcf8a'],
     ['switch', 'Power', 'Power switch', "Two wires from the supply's 24-pin socket. Closing the switch connects PS_ON to ground, which turns the supply on.", '#7ddc8a'],
-    ['cords', 'Cables', 'Power and network cables', "Mains for the power supply, the ThinkCentre's own power cord and two network cables.", '#525b66'],
-    ['case', 'Printed', 'Printed case', 'Sleeve and rear cap, drawn from the same dimensions as the printed parts. Hex vents on every side.', '#b4bdc7'],
+    ['cords', 'Cables', 'Power and network cables', "Mains for the power supply, the ThinkCentre's own power cord and three network cables.", '#525b66'],
+    ['case', 'Printed', 'Printed case', 'Sleeve and rear cap, 187 × 208 × 263 mm, drawn from the same script as the printed parts. Hex vents on every side.', '#b4bdc7'],
   ].map(([id, kind, name, desc, dot], i) => ({ id, kind, name, desc, dot, n: i + 1 }));
   const ENT = Object.fromEntries(ENTS.map((e) => [e.id, e]));
 
@@ -229,14 +231,15 @@
     part('fan', blades(fc, 21, 56, 7, 191, 204), { color: hex('#1b1f24'), edge: hex('#6b7480', 0.35), group: 's', spin: { c: fc, speed: 5.2 } });
   }
 
-  function blades(c, r0, r1, count, y0, y1) {
+  // Fan blades between a0 and a1 along the y axis (c = [x, -, z]) or the z axis (c = [x, y, -]).
+  function blades(c, r0, r1, count, a0, a1, axis = 'y') {
+    const P = (r, th, a) => (axis === 'z' ? [c[0] + r * Math.cos(th), c[1] + r * Math.sin(th), a] : [c[0] + r * Math.cos(th), a, c[2] + r * Math.sin(th)]);
     const g = new Geo();
     for (let i = 0; i < count; i++) {
       const a = (i / count) * Math.PI * 2;
       const strip = [0, 1, 2, 3].map((j) => {
         const r = lerp(r0, r1, j / 3), sweep = 0.12 * j;
-        const lead = a + sweep, trail = a + sweep + 0.62;
-        return [[c[0] + r * Math.cos(lead), y0, c[2] + r * Math.sin(lead)], [c[0] + r * Math.cos(trail), y1, c[2] + r * Math.sin(trail)]];
+        return [P(r, a + sweep, a0), P(r, a + sweep + 0.62, a1)];
       });
       for (let j = 0; j < 3; j++) {
         const [a0, a1] = strip[j], [b0, b1] = strip[j + 1];
@@ -267,32 +270,35 @@
     RIITOP_PORTS.forEach((y) => riitop.loop([[99, y - 3, TINY_Z - 9.1], [113, y - 3, TINY_Z - 9.1], [113, y + 3, TINY_Z - 9.1], [99, y + 3, TINY_Z - 9.1]]));
     part('riitop', riitop, { color: hex('#c8332b'), edge: hex('#ff9d8f', 0.85), group: 'ti' });
 
-    // Rear ports, matching the photo: X710 on the right (seen from the front), the regulator in the middle.
-    const nic = new Geo().box(100, 62, TINY_Z + 22, 166, 184, TINY_Z + 24);
-    nic.box(122, 120, TINY_Z + 24, 144, 142, TINY_Z + 30);
+    // Rear ports, from the top-down photo: seen from the front, the onboard port and the X710 are on the left,
+    // the USB fan regulator in the middle and the power supply on the right.
+    const nic = new Geo().box(22, 40, TINY_Z + 22, 90, 184, TINY_Z + 24);
+    nic.box(45, 110, TINY_Z + 24, 67, 132, TINY_Z + 30);
     part('nic', nic, { color: hex('#1d5b38'), edge: hex('#7fd19c', 0.7), group: 'ti' });
-    part('nic', new Geo().box(100, 184, TINY_Z + 3, 166, 187.5, TINY_Z + 31), { color: hex('#e2b93b'), edge: hex('#ffe08a', 0.7), group: 'ti' });
-    part('nic', new Geo().box(118, 186.5, TINY_Z + 9, 134, 197, TINY_Z + 23).box(142, 186.5, TINY_Z + 9, 158, 197, TINY_Z + 23),
+    part('nic', new Geo().box(24, 184, TINY_Z + 3, 76, 187.5, TINY_Z + 31), { color: hex('#e2b93b'), edge: hex('#ffe08a', 0.7), group: 'ti' });
+    part('nic', new Geo().box(28, 186.5, TINY_Z + 9, 44, 197, TINY_Z + 23).box(52, 186.5, TINY_Z + 9, 68, 197, TINY_Z + 23),
       { color: hex('#b8975a'), edge: hex('#e9d29a', 0.8), group: 'ti' });
-    part('tiny', new Geo().box(168, 186.5, TINY_Z + 4, 179, 196, TINY_Z + 16), { color: hex('#b8975a'), edge: hex('#e9d29a', 0.6), group: 't' });
+    part('tiny', new Geo().box(8, 186.5, TINY_Z + 4, 20, 196, TINY_Z + 16), { color: hex('#b8975a'), edge: hex('#e9d29a', 0.6), group: 't' });
 
-    const usb = new Geo().box(76, 186.5, TINY_Z + 8, 88, 199, TINY_Z + 14).box(72, 199, TINY_Z + 6, 92, 200.6, TINY_Z + 56);
-    usb.cyl([0, 199.8, TINY_Z + 36], 'x', 5.5, 60, 72, 20).box(76, 200.6, TINY_Z + 22, 84, 203, TINY_Z + 30);
+    const usb = new Geo().box(88, 186.5, TINY_Z + 8, 100, 199, TINY_Z + 14).box(84, 199, TINY_Z + 6, 104, 200.6, TINY_Z + 56);
+    usb.cyl([0, 199.8, TINY_Z + 36], 'x', 5.5, 104, 116, 20).box(86, 200.6, TINY_Z + 22, 94, 203, TINY_Z + 30);
     part('usb', usb, { color: hex('#2f6fc4'), edge: hex('#8fc0ff', 0.7), group: 't' });
-    part('usb', new Geo().box(86, 200.6, TINY_Z + 16, 89, 201.6, TINY_Z + 19, false), { color: hex('#7fb4ff'), emit: [0.3, 0.45, 1], lit: 0, group: 't' });
+    part('usb', new Geo().box(96, 200.6, TINY_Z + 16, 99, 201.6, TINY_Z + 19, false), { color: hex('#7fb4ff'), emit: [0.3, 0.45, 1], lit: 0, group: 't' });
   }
 
-  // Power supply: upright behind the left half of the cage (seen from the front), its 80 mm fan facing the rear grille.
-  // AC inlet on the top end, modular sockets on the bottom end. Position approximate.
+  // Power supply: stands on end on the case floor behind the drive cage, against the right-hand wall seen from
+  // the front (the left seen from the rear), mostly clear of the 120 mm fan. Its small fan is on the top end.
   {
-    const g = new Geo().box(3, 218, 30, 84, 259, 195);
-    g.box(16, 231, 26, 30, 243, 30).box(44, 231, 26, 60, 243, 30).box(36, 232, 195, 50, 245, 199);
+    const g = new Geo().box(99.5, 218, 0, 180.5, 259, 165);
+    g.box(150, 228, 165, 174, 248, 168); // AC inlet
+    g.box(97, 226, 128, 99.5, 238, 142).box(97, 226, 146, 99.5, 240, 158); // modular sockets: Molex, 24-pin
     part('psu', g, { color: hex('#15181d'), edge: hex('#8a95a3', 0.7), group: 'p' });
-    const pc = [43.5, 259.3, 150];
-    const grille = new Geo().circle(pc, 'y', 38, 259.4, 40).circle(pc, 'y', 12, 259.4, 24);
-    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; grille.seg([pc[0] + 12 * Math.cos(a), 259.4, pc[2] + 12 * Math.sin(a)], [pc[0] + 38 * Math.cos(a), 259.4, pc[2] + 38 * Math.sin(a)]); }
-    part('psu', grille, { color: [0, 0, 0, 0], edge: hex('#9aa5b3', 0.75), linesOnly: true, group: 'p' });
-    part('psu', blades([pc[0], 0, pc[2]], 13, 35, 7, 259.1, 259.8), { color: hex('#2a2f36'), edge: hex('#7b8592', 0.35), group: 'p', spin: { c: pc, speed: 2.4 } });
+    const fc = [124, 238.5, 165.4];
+    const grille = new Geo().circle(fc, 'z', 18.5, 165.4, 36).circle(fc, 'z', 6, 165.4, 20);
+    grille.loop([[104, 218.5, 165.4], [144, 218.5, 165.4], [144, 258.5, 165.4], [104, 258.5, 165.4]]);
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; grille.seg([fc[0] + 6 * Math.cos(a), fc[1] + 6 * Math.sin(a), 165.4], [fc[0] + 18.5 * Math.cos(a), fc[1] + 18.5 * Math.sin(a), 165.4]); }
+    part('psu', grille, { color: [0, 0, 0, 0], edge: hex('#9aa5b3', 0.8), linesOnly: true, group: 'p' });
+    part('psu', blades(fc, 6.5, 17, 7, 165.2, 166, 'z'), { color: hex('#2a2f36'), edge: hex('#7b8592', 0.35), group: 'p', spin: { c: fc, speed: 4, axis: 'z' } });
     part('switch', new Geo().box(100, 286, 168, 118, 300, 180).box(105, 285, 172, 113, 286, 177), { color: hex('#1a1d22'), edge: hex('#7ddc8a', 0.6), group: 'c' });
   }
 
@@ -315,18 +321,18 @@
   }
   const WIRES = [hex('#f2c94c'), hex('#1b1d21'), hex('#1b1d21'), hex('#e0483e')];
   const ribbon = WIRES.map((_, i) => [-3.3 + 2.2 * i, 0, 0]);
-  cable('molex', [[23, 237, 26, 'p'], [23, 237, 12, 'p'], [92, 234, 10, 'p'], [135.5, 216, 14, 's'], [135.5, 215, 40, 's'], [135.5, 215, 64.5, 's'], [135.5, 205, 64.5, 's']],
-    WIRES, 0.95, ribbon, { plugs: [[130.5, 194, 53, 140.5, 206, 76]] });
-  cable('molex', [[135.5, 205, 66, 's'], [135.5, 214, 70, 's'], [135.5, 214, 104, 's'], [135.5, 205, 109.5, 's']],
+  cable('molex', [[97, 232, 135, 'p'], [88, 232, 135, 'p'], [88, 212, 126, 's'], [135.5, 212, 124, 's'], [135.5, 212, 114, 's'], [135.5, 205, 109.5, 's']],
     WIRES, 0.95, ribbon, { plugs: [[130.5, 194, 98, 140.5, 206, 121]] });
-  cable('switch', [[52, 237, 26, 'p'], [52, 237, 16, 'p'], [92, 240, 14, 'p'], [92, 244, 60, 'p'], [92, 250, 214, 'c'], [104, 278, 226, 'c'], [109, 293, 180, 'c']],
+  cable('molex', [[135.5, 205, 108, 's'], [135.5, 213, 100, 's'], [135.5, 213, 70, 's'], [135.5, 205, 64.5, 's']],
+    WIRES, 0.95, ribbon, { plugs: [[130.5, 194, 53, 140.5, 206, 76]] });
+  cable('switch', [[97, 233, 152, 'p'], [84, 233, 152, 'p'], [84, 240, 196, 'p'], [92, 250, 214, 'c'], [104, 278, 226, 'c'], [109, 293, 180, 'c']],
     [hex('#3dbb5a'), hex('#1b1d21')], 0.9, [[-1, 0, 0], [1, 0, 0]]);
-  cable('cords', [[43, 238, 199, 'p'], [43, 238, 222, 'p'], [43, 282, 232, 'c'], [43, 318, 150, 'c'], [43, 324, -3, 'c']], hex('#202328'), 3);
-  cable('cords', [[20, 186.5, TINY_Z + 10, 't'], [20, 196, TINY_Z + 10, 't'], [20, 204, 216, 't'], [20, 288, 226, 'c'], [20, 310, 60, 'c'], [20, 314, -3, 'c']], hex('#202328'), 2.4);
-  cable('cords', [[173.5, 196, TINY_Z + 10, 't'], [173.5, 205, TINY_Z + 14, 't'], [173.5, 214, 220, 't'], [173.5, 290, 228, 'c'], [173.5, 318, -3, 'c']], hex('#d9c25a'), 2.6);
-  cable('cords', [[150, 197, TINY_Z + 16, 'ti'], [150, 207, TINY_Z + 20, 'ti'], [150, 220, 224, 't'], [150, 296, 230, 'c'], [150, 324, -3, 'c']], hex('#5d97cf'), 2.6);
-  cable('cords', [[126, 197, TINY_Z + 16, 'ti'], [126, 206, TINY_Z + 20, 'ti'], [126, 217, 222, 't'], [126, 292, 229, 'c'], [126, 320, -3, 'c']], hex('#202328'), 2.6);
-  cable('usb', [[80, 202, TINY_Z + 56, 't'], [80, 204, 236, 't'], [80, 278, 248, 'c'], [80, 306, 80, 'c'], [80, 310, -3, 'c']], hex('#202328'), 1.6);
+  cable('cords', [[162, 238, 168, 'p'], [162, 238, 178, 'p'], [162, 266, 180, 'c'], [162, 284, 160, 'c'], [162, 296, 60, 'c'], [162, 300, -3, 'c']], hex('#202328'), 3);
+  cable('cords', [[140, 186.5, TINY_Z + 10, 't'], [140, 196, TINY_Z + 10, 't'], [140, 204, 216, 't'], [140, 288, 226, 'c'], [140, 310, 60, 'c'], [140, 314, -3, 'c']], hex('#202328'), 2.4);
+  cable('cords', [[14, 196, TINY_Z + 10, 't'], [14, 205, TINY_Z + 14, 't'], [14, 214, 220, 't'], [14, 290, 228, 'c'], [14, 318, -3, 'c']], hex('#d9c25a'), 2.6);
+  cable('cords', [[36, 197, TINY_Z + 16, 'ti'], [36, 207, TINY_Z + 20, 'ti'], [36, 220, 224, 't'], [36, 296, 230, 'c'], [36, 324, -3, 'c']], hex('#5d97cf'), 2.6);
+  cable('cords', [[60, 197, TINY_Z + 16, 'ti'], [60, 206, TINY_Z + 20, 'ti'], [60, 217, 222, 't'], [60, 292, 229, 'c'], [60, 320, -3, 'c']], hex('#202328'), 2.6);
+  cable('usb', [[94, 202, TINY_Z + 56, 't'], [94, 204, 236, 't'], [94, 278, 248, 'c'], [94, 306, 80, 'c'], [94, 310, -3, 'c']], hex('#202328'), 1.6);
 
   /* ---------- WebGL ---------- */
   const gl = canvas.getContext('webgl', { antialias: true, alpha: false, powerPreference: 'low-power' });
@@ -503,7 +509,7 @@
   }
   function modelMatrix(m) {
     const off = m.cable ? [0, 0, 0] : groupOffset(m.group, explode);
-    return m.spin ? spinY(m.spin.c, fanAngle * m.spin.speed, off) : translate(off);
+    return m.spin ? spinAbout(m.spin.c, fanAngle * m.spin.speed, off, m.spin.axis) : translate(off);
   }
   function bindAttrib(prog, name, buf) {
     const loc = prog[name]; if (loc < 0) return;
