@@ -51,6 +51,6 @@ summary: The robot can work out how it's moving with Basalt on the CPU or NVIDIA
 
 <h2>Round two: maps</h2>
 
-<p>Numbers are nice; maps you can overlay are better. The next test replays one recorded drive through both pipelines, each building its own map from scratch, with the robot's drivers switched off so nothing can move. It counts tracking losses and loop closures, measures the map's area, and checks how far from the start each one thinks the robot finished. If the drive ends where it began, the right answer is zero. It also records how hard each one works the CPU and GPU.</p>
+<p>Numbers are nice; maps you can overlay are better. The next test replays one recorded drive through both pipelines, each building its own map from scratch, with the robot's drivers switched off so nothing can move. It counts tracking losses and loop closures, measures the map's area, and checks how far from the start each one thinks the robot finished. If the drive ends where it began, the right answer is zero. It also records how hard each one works the CPU and GPU. The test is <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/scripts/compare_pipelines.sh"><code>compare_pipelines.sh</code></a>.</p>
 
 {{soon:The same recorded drive mapped by both pipelines, side by side and overlaid.|Maps coming soon}}

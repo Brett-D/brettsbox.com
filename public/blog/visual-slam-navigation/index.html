@@ -129,6 +129,8 @@
   <p>Stairs and furniture don't forgive mistakes. The Roomba's own cliff sensors stay active in Safe mode, the collision monitor watches the depth camera, and the bump stop is the last resort. Three layers, because any one of them can be wrong.</p>
 </aside>
 
+<p><strong>The code:</strong> the launch files that wire this pipeline together are in <a href="https://github.com/Brett-D/roomba-jetson-stack/tree/main/src/roomba_bringup/launch"><code>roomba_bringup/launch</code></a>, and the watchdog is <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_perception/roomba_perception/vslam_watchdog.py"><code>vslam_watchdog.py</code></a>, now also <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_rs/src/watchdog.rs">in Rust</a>.</p>
+
 <p>Next: an unexpected detour into the Roomba's charging circuit, in <a href="/blog/charging-error-3/">chasing Charging Error 3</a>.</p>
 
   </div>

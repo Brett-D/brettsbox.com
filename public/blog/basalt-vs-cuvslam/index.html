@@ -113,7 +113,7 @@
 
 <h2>Round two: maps</h2>
 
-<p>Numbers are nice; maps you can overlay are better. The next test replays one recorded drive through both pipelines, each building its own map from scratch, with the robot's drivers switched off so nothing can move. It counts tracking losses and loop closures, measures the map's area, and checks how far from the start each one thinks the robot finished. If the drive ends where it began, the right answer is zero. It also records how hard each one works the CPU and GPU.</p>
+<p>Numbers are nice; maps you can overlay are better. The next test replays one recorded drive through both pipelines, each building its own map from scratch, with the robot's drivers switched off so nothing can move. It counts tracking losses and loop closures, measures the map's area, and checks how far from the start each one thinks the robot finished. If the drive ends where it began, the right answer is zero. It also records how hard each one works the CPU and GPU. The test is <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/scripts/compare_pipelines.sh"><code>compare_pipelines.sh</code></a>.</p>
 
 <figure class="figure figure--soon" data-reveal><div class="soon" role="img" aria-label="Placeholder: Maps coming soon"><svg viewBox="0 0 48 48" aria-hidden="true" class="soon__icon"><path d="M6 15h9l3-5h12l3 5h9v24H6z" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="24" cy="26" r="7" fill="none" stroke="currentColor" stroke-width="2.5"/></svg><span class="soon__label">Maps coming soon</span></div><figcaption><span class="fig-no">Fig. 01</span> The same recorded drive mapped by both pipelines, side by side and overlaid.</figcaption></figure>
 

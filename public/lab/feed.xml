@@ -70,6 +70,8 @@
   &lt;p class=&quot;callout__title&quot;&gt;The rule&lt;/p&gt;
   &lt;p&gt;Every idea gets the same treatment: design the situations it practises on, the rewards and the tests, train it on the 5090, and race it against the classical logic in both twins, on situations it never trained on. Only the winners move to the Jetson, running from the Rust nodes, and the collision monitor and the bump and cliff reflexes always stay in charge of safety. The real house gets the final say.&lt;/p&gt;
 &lt;/aside&gt;
+
+&lt;p&gt;&lt;strong&gt;The code:&lt;/strong&gt; the 3D twin, including the house builder, is in &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/tree/main/twin/isaac&quot;&gt;&lt;code&gt;twin/isaac&lt;/code&gt;&lt;/a&gt;, and the 2D twin&#x27;s nine scenarios are in &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/tree/main/src/roomba_bringup/config/twin2d&quot;&gt;&lt;code&gt;config/twin2d&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
 </content></entry>
 <entry><title>From Python to Rust: same robot, a fraction of the CPU</title><link href="https://brettsbox.com/blog/python-to-rust/"/><id>https://brettsbox.com/blog/python-to-rust/</id><published>2026-11-15T00:00:00+00:00</published><updated>2026-11-15T00:00:00+00:00</updated><summary>Ten of the robot&#x27;s ROS 2 nodes now have Rust versions, each checked against the Python original output for output. The five busiest went from about 1.3 CPU cores to under a fifth of one.</summary><content type="html">&lt;p&gt;The Jetson was working too hard. On a typical exploration run its load average sat around 20 on six cores: far more work waiting than it had cores to run it on. Most of the heavy lifting was already native code: Nav2 and RTAB-Map are C++, and cuVSLAM and nvblox run on the GPU. The overhead was in the glue I&#x27;d written myself in Python. The web dashboard, the Roomba driver, the odometry watchdog and the obstacle detector each used a quarter to a half of a CPU core.&lt;/p&gt;
 
@@ -126,7 +128,7 @@
   &lt;p&gt;Every number here comes from recorded drives and a simulated Roomba. The Rust nodes are now the default, so the next real drive will be the first on Rust. If anything misbehaves, &lt;code&gt;rust_nodes:=false&lt;/code&gt; brings back the Python versions.&lt;/p&gt;
 &lt;/aside&gt;
 
-&lt;p&gt;The code is in &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack&quot;&gt;roomba-jetson-stack&lt;/a&gt;, in &lt;code&gt;src/roomba_rs&lt;/code&gt;, along with the comparison tools in &lt;code&gt;tools/&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;The code:&lt;/strong&gt; the Rust nodes are in &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/tree/main/src/roomba_rs&quot;&gt;&lt;code&gt;src/roomba_rs&lt;/code&gt;&lt;/a&gt;, and the Python-vs-Rust comparison tools in &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/tree/main/tools&quot;&gt;&lt;code&gt;tools/&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
 </content></entry>
 <entry><title>Basalt vs cuVSLAM, round one: CPU or GPU?</title><link href="https://brettsbox.com/blog/basalt-vs-cuvslam/"/><id>https://brettsbox.com/blog/basalt-vs-cuvslam/</id><published>2026-11-14T00:00:00+00:00</published><updated>2026-11-14T00:00:00+00:00</updated><summary>The robot can work out how it&#x27;s moving with Basalt on the CPU or NVIDIA cuVSLAM on the GPU. The GPU holds still better; Basalt stays on track better once it moves. Here&#x27;s the scorecard so far.</summary><content type="html">&lt;p&gt;The robot now has two ways to work out how it&#x27;s moving. &lt;a href=&quot;https://brettsbox.com/blog/visual-slam-navigation/&quot;&gt;Basalt&lt;/a&gt; runs on the Jetson&#x27;s CPU and &lt;a href=&quot;https://brettsbox.com/blog/gpu-cuvslam-nvblox/&quot;&gt;NVIDIA cuVSLAM&lt;/a&gt; runs on its GPU. Both watch the same stereo camera and IMU, and one launch argument picks which one is in charge. That makes for a fair fight: I can record a run once and replay exactly the same camera frames through each.&lt;/p&gt;
 
@@ -174,7 +176,7 @@
 
 &lt;h2&gt;Round two: maps&lt;/h2&gt;
 
-&lt;p&gt;Numbers are nice; maps you can overlay are better. The next test replays one recorded drive through both pipelines, each building its own map from scratch, with the robot&#x27;s drivers switched off so nothing can move. It counts tracking losses and loop closures, measures the map&#x27;s area, and checks how far from the start each one thinks the robot finished. If the drive ends where it began, the right answer is zero. It also records how hard each one works the CPU and GPU.&lt;/p&gt;
+&lt;p&gt;Numbers are nice; maps you can overlay are better. The next test replays one recorded drive through both pipelines, each building its own map from scratch, with the robot&#x27;s drivers switched off so nothing can move. It counts tracking losses and loop closures, measures the map&#x27;s area, and checks how far from the start each one thinks the robot finished. If the drive ends where it began, the right answer is zero. It also records how hard each one works the CPU and GPU. The test is &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/blob/main/scripts/compare_pipelines.sh&quot;&gt;&lt;code&gt;compare_pipelines.sh&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
 
 
 </content></entry>
@@ -232,6 +234,8 @@
 &lt;h3&gt;Faster storage&lt;/h3&gt;
 
 &lt;p&gt;Recording stereo images, depth and every sensor topic eats disk bandwidth. I swapped in a faster 256 GB NVMe drive, which manages about 1.8 GB/s on the Jetson&#x27;s PCIe Gen3 x4 slot.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;The code:&lt;/strong&gt; &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_bringup/launch/vslam.launch.py&quot;&gt;&lt;code&gt;vslam.launch.py&lt;/code&gt;&lt;/a&gt; starts cuVSLAM and the EKF; their settings, and nvblox&#x27;s, are in &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_bringup/config/ekf_robot.yaml&quot;&gt;&lt;code&gt;ekf_robot.yaml&lt;/code&gt;&lt;/a&gt; and &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_bringup/config/nvblox_robot.yaml&quot;&gt;&lt;code&gt;nvblox_robot.yaml&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
 
 &lt;h2&gt;Next&lt;/h2&gt;
 
@@ -388,6 +392,8 @@ i2cdetect -y -r 7   # the ADS1115 should answer at 0x48&lt;/code&gt;&lt;/pre&gt;
   &lt;p&gt;Stairs and furniture don&#x27;t forgive mistakes. The Roomba&#x27;s own cliff sensors stay active in Safe mode, the collision monitor watches the depth camera, and the bump stop is the last resort. Three layers, because any one of them can be wrong.&lt;/p&gt;
 &lt;/aside&gt;
 
+&lt;p&gt;&lt;strong&gt;The code:&lt;/strong&gt; the launch files that wire this pipeline together are in &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/tree/main/src/roomba_bringup/launch&quot;&gt;&lt;code&gt;roomba_bringup/launch&lt;/code&gt;&lt;/a&gt;, and the watchdog is &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_perception/roomba_perception/vslam_watchdog.py&quot;&gt;&lt;code&gt;vslam_watchdog.py&lt;/code&gt;&lt;/a&gt;, now also &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_rs/src/watchdog.rs&quot;&gt;in Rust&lt;/a&gt;.&lt;/p&gt;
+
 &lt;p&gt;Next: an unexpected detour into the Roomba&#x27;s charging circuit, in &lt;a href=&quot;https://brettsbox.com/blog/charging-error-3/&quot;&gt;chasing Charging Error 3&lt;/a&gt;.&lt;/p&gt;
 </content></entry>
 <entry><title>Talking to the Roomba: serial wiring and a ROS 2 driver</title><link href="https://brettsbox.com/blog/serial-wiring-ros2-driver/"/><id>https://brettsbox.com/blog/serial-wiring-ros2-driver/</id><published>2026-11-08T00:00:00+00:00</published><updated>2026-11-08T00:00:00+00:00</updated><summary>The Roomba&#x27;s 7-pin Mini-DIN port, why my first level-shifter wiring was flaky, the 5 V FT232 adapter that fixed it, and the open-source ROS 2 driver I wrote on top.</summary><content type="html">&lt;p&gt;The ESP32 proved the Roomba would listen. Now the Jetson needed to hold a conversation with it for hours at a time, at full speed, without dropping a byte. That turned out to be harder than it sounds.&lt;/p&gt;
@@ -438,7 +444,7 @@ i2cdetect -y -r 7   # the ADS1115 should answer at 0x48&lt;/code&gt;&lt;/pre&gt;
   &lt;li&gt;&lt;strong&gt;Sensors and battery&lt;/strong&gt;: bumpers, cliffs, wheel drops, voltage, current, charge and temperature, all as ROS topics. It also exposes the fun stuff: brushes, LEDs, the 4-digit display, songs and the dock button.&lt;/li&gt;
   &lt;li&gt;&lt;strong&gt;Safe and Full modes&lt;/strong&gt;: it starts in Safe mode, which keeps the Roomba&#x27;s own cliff protection active; Full mode hands over complete control when you really need it. On exit it hands the robot back in Passive mode.&lt;/li&gt;
   &lt;li&gt;&lt;strong&gt;Bump stop and a command watchdog&lt;/strong&gt;: if a bumper triggers, or commands stop arriving, or the serial link drops, the wheels stop.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;25 unit tests&lt;/strong&gt;: packet parsing, encoder wrap-around and mode handling are tested without needing a robot on the desk.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;36 unit tests&lt;/strong&gt;: packet parsing, encoder wrap-around and mode handling are tested without needing a robot on the desk.&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;pre&gt;&lt;code&gt;$ ros2 launch roomba_driver roomba_driver.launch.py
@@ -459,6 +465,8 @@ $ ros2 topic echo /roomba/sensors&lt;/code&gt;&lt;/pre&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;The repository also has the wiring diagrams, an Open Interface reference, and a small command-line tool for poking the robot without ROS at all. It&#x27;s Apache-2.0 licensed, so help yourself if you have a 500-series Roomba of your own.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Update:&lt;/strong&gt; the robot itself now runs a &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_rs/src/bin/roomba_driver.rs&quot;&gt;Rust port of this driver&lt;/a&gt; with the same topics, parameters and safety reflexes, at under a tenth of the CPU. More in &lt;a href=&quot;https://brettsbox.com/blog/python-to-rust/&quot;&gt;From Python to Rust&lt;/a&gt;.&lt;/p&gt;
 
 &lt;p&gt;Next: &lt;a href=&quot;https://brettsbox.com/blog/visual-slam-navigation/&quot;&gt;giving it eyes, a map, and somewhere to go&lt;/a&gt;.&lt;/p&gt;
 </content></entry>
@@ -503,6 +511,8 @@ $ ros2 topic echo /roomba/sensors&lt;/code&gt;&lt;/pre&gt;
 &lt;p&gt;None of this needs a new robot. It needs some wiring, a lot of software, and patience. The rest of this build log is that story, mistakes included.&lt;/p&gt;
 
 
+
+&lt;p&gt;&lt;strong&gt;The code:&lt;/strong&gt; the platform generator and its STLs are in &lt;a href=&quot;https://github.com/Brett-D/roomba-jetson-stack/tree/main/hardware/platform&quot;&gt;&lt;code&gt;hardware/platform&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
 
 &lt;p&gt;Next up: &lt;a href=&quot;https://brettsbox.com/blog/serial-wiring-ros2-driver/&quot;&gt;getting a reliable serial link and writing a proper ROS 2 driver&lt;/a&gt;.&lt;/p&gt;
 </content></entry>

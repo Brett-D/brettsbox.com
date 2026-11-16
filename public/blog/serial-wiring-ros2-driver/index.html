@@ -115,7 +115,7 @@
   <li><strong>Sensors and battery</strong>: bumpers, cliffs, wheel drops, voltage, current, charge and temperature, all as ROS topics. It also exposes the fun stuff: brushes, LEDs, the 4-digit display, songs and the dock button.</li>
   <li><strong>Safe and Full modes</strong>: it starts in Safe mode, which keeps the Roomba's own cliff protection active; Full mode hands over complete control when you really need it. On exit it hands the robot back in Passive mode.</li>
   <li><strong>Bump stop and a command watchdog</strong>: if a bumper triggers, or commands stop arriving, or the serial link drops, the wheels stop.</li>
-  <li><strong>25 unit tests</strong>: packet parsing, encoder wrap-around and mode handling are tested without needing a robot on the desk.</li>
+  <li><strong>36 unit tests</strong>: packet parsing, encoder wrap-around and mode handling are tested without needing a robot on the desk.</li>
 </ul>
 
 <pre><code>$ ros2 launch roomba_driver roomba_driver.launch.py
@@ -136,6 +136,8 @@ $ ros2 topic echo /roomba/sensors</code></pre>
 </ul>
 
 <p>The repository also has the wiring diagrams, an Open Interface reference, and a small command-line tool for poking the robot without ROS at all. It's Apache-2.0 licensed, so help yourself if you have a 500-series Roomba of your own.</p>
+
+<p><strong>Update:</strong> the robot itself now runs a <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_rs/src/bin/roomba_driver.rs">Rust port of this driver</a> with the same topics, parameters and safety reflexes, at under a tenth of the CPU. More in <a href="/blog/python-to-rust/">From Python to Rust</a>.</p>
 
 <p>Next: <a href="/blog/visual-slam-navigation/">giving it eyes, a map, and somewhere to go</a>.</p>
 

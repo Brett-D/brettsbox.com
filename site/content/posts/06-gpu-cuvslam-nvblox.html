@@ -61,6 +61,8 @@ image: /assets/media/vslam-demo-poster.jpg
 
 <p>Recording stereo images, depth and every sensor topic eats disk bandwidth. I swapped in a faster 256 GB NVMe drive, which manages about 1.8 GB/s on the Jetson's PCIe Gen3 x4 slot.</p>
 
+<p><strong>The code:</strong> <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_bringup/launch/vslam.launch.py"><code>vslam.launch.py</code></a> starts cuVSLAM and the EKF; their settings, and nvblox's, are in <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_bringup/config/ekf_robot.yaml"><code>ekf_robot.yaml</code></a> and <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_bringup/config/nvblox_robot.yaml"><code>nvblox_robot.yaml</code></a>.</p>
+
 <h2>Next</h2>
 
 <p>Next: the CPU (Basalt) and GPU (cuVSLAM) pipelines head to head. The first results, and why the GPU isn't simply better, are in <a href="{{base}}/blog/basalt-vs-cuvslam/">Basalt vs cuVSLAM, round one</a>.</p>
