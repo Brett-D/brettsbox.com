@@ -44,6 +44,15 @@
       "alt": "Isaac Sim recording of the simulated Roomba exploring the simulated house on its own while simulated people walk past it near a staircase railing. An inset in the corner shows the robot's own camera view from 13 cm above the floor.",
       "caption": "The robot's real software (cuVSLAM, Nav2 and the explorer) exploring the simulated house on its own while people walk past. Inset: what its camera sees."
     },
+    "swarm": {
+      "mp4": "/assets/media/learn-swarm.mp4",
+      "webm": "/assets/media/learn-swarm.webm",
+      "poster": "/assets/media/learn-swarm-poster.jpg",
+      "width": 1280,
+      "height": 720,
+      "alt": "Side-by-side render of the Isaac Lab simulation: a grid of 4 by 4 metre tiles seen from above at an angle, each with a small simulated Roomba among walls, furniture, railings and drops. Text at the top of each half gives the counts. Left, before training: most robots stay in place with blue or red rings; 243 of 1,536 freed. Right, after training: many robots drive clear and turn green; 1,289 of 1,536 freed.",
+      "caption": "A render of the actual Isaac Lab simulation, not robot footage, at 0.6× real time. Rings: blue driving, grey idle, red bump, green freed; the line is the last 4 s of driving. Just for this view, each tile holds one robot, walls are see-through, robots are brightened, and a freed robot pauses for 1.5 s before restarting."
+    },
     "unstuck": {
       "mp4": "/assets/media/learn-unstuck.mp4",
       "webm": "/assets/media/learn-unstuck.webm",

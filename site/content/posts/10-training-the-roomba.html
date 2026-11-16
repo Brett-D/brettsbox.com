@@ -6,6 +6,7 @@ date: 2026-11-16
 tags: roomba, machine-learning, simulation
 summary: "I trained a person detector, an unstuck skill and an exploration ranker on the RTX 5090: the data, the algorithms, the rewards and the code. One clearly beat today's logic in simulation, one didn't, and none of them runs on the real robot yet."
 image: /assets/media/learn-unstuck-poster.jpg
+thumb: video:unstuck
 ---
 <p>The <a href="{{base}}/blog/house-digital-twin/">last post</a> ended with a plan: develop navigation algorithms by training them in simulation, and race each one against the robot's current logic. Three are trained. This is how, with which algorithms and code, and how they did.</p>
 
@@ -42,7 +43,27 @@ image: /assets/media/learn-unstuck-poster.jpg
   <li><strong>The reward:</strong> +10 for reaching 0.3 m of clear space, a little for progress towards the goal and for gaining room, −1 per bump, smaller penalties for scraping along things, touching anything with the camera or lid, jerky moves and every step taken, and −10 for falling down a drop.</li>
   <li><strong>The randomisation:</strong> wheel strength, motor delay, sensor noise and dropouts vary between tries, and the right bump switch is ignored half the time, as on the real robot, so it can't rely on a perfect one.</li>
 </ul>
-<p>The <strong>algorithm</strong> is PPO (proximal policy optimisation, using the RSL-RL library), training a small three-layer neural network (256, 128 and 64 units). It took <strong>30.7 million steps, about 850 hours of simulated driving, in 39 minutes</strong> on the 5090. The baseline is today's recovery (Nav2's spin, back up, clear the map and wait, plus the driver's bump reflex), recreated in the same simulator with the same physics and sensors.</p>
+<p>The <strong>algorithm</strong> is PPO (proximal policy optimisation, using the RSL-RL library), training a small three-layer neural network (256, 128 and 64 units). It took <strong>30.7 million steps, about 850 hours of simulated driving, in 39 minutes</strong> on the 5090.</p>
+
+<h3>Watching 1,536 Roombas learn</h3>
+<p>This is the training itself, rendered from the simulation: 1,536 Roombas at once, each in its own stuck situation, with the same physics, situations and randomisation they trained on. On the left is the network before training (iteration 0); on the right, after 300 iterations, the version exported for the robot. Both start from exactly the same positions, and each try ends when the robot gets free, falls down a drop or runs out of its 15 seconds.</p>
+
+{{video:swarm}}
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th scope="col">On the training situations</th><th scope="col">Freed on the first try</th><th scope="col">Mean time to get free</th><th scope="col">Drops</th></tr></thead>
+  <tbody>
+    <tr><td>Before training (iteration 0)</td><td>243 (16%)</td><td>4.5 s</td><td>48</td></tr>
+    <tr><td>Early (iteration 50)</td><td>1,247 (81%)</td><td>2.3 s</td><td>3</td></tr>
+    <tr><td>After training (iteration 300)</td><td><strong>1,289 (84%)</strong></td><td><strong>2.2 s</strong></td><td><strong>2</strong></td></tr>
+  </tbody>
+</table>
+</div>
+<p>Most of the learning happens early. These are the situations it practised on, so they show that it learned, not how well it copes with new ones. That's the next test.</p>
+
+<h3>Against today's recovery</h3>
+<p>The baseline is today's recovery (Nav2's spin, back up, clear the map and wait, plus the driver's bump reflex), recreated in the same simulator with the same physics and sensors, on situations neither had seen.</p>
 
 {{video:unstuck}}
 
@@ -59,7 +80,7 @@ image: /assets/media/learn-unstuck-poster.jpg
 </div>
 <p>On 117 spots cut from the house's own floor plans it was much the same: 85% against 30%. Its weak spots are clutter (31% freed) and chair legs (67%). Next, a closer test, still in simulation: the network, exported and run in Rust on the CPU with matching output to within 0.0000005, became an action the explorer calls when stuck, running in the 2D twin alongside the robot's real software. Over 93 calls it freed the robot 92 times, in a median of 2.5 s, and across the ten scenarios bumper hits fell from 24 to 15. But it didn't increase how much of the house got mapped, and since the explorer fixes it's rarely needed: four calls in twenty runs.</p>
 <p>It's still simulation. The simulated Roomba has rigid wheels and no rugs, its costmap is cleaner than the real camera's, and its light bumpers are an approximation. Before it drives the real robot, it needs the light bumpers calibrated, a run in the 3D twin with the full camera pipeline, and then tests with me next to it, ready to stop it.</p>
-<p><strong>The code:</strong> <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/unstuck/train_unstuck.py"><code>train_unstuck.py</code></a> trains, <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/unstuck/unstuck_env.py"><code>unstuck_env.py</code></a> is the environment, <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/unstuck/scenarios.py"><code>scenarios.py</code></a> generates the situations, <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/unstuck/baseline.py"><code>baseline.py</code></a> is today's recovery, and <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_rs/src/learned/unstuck.rs"><code>unstuck.rs</code></a> runs it on the robot side (turned on with <code>unstuck_skill:=true</code>).</p>
+<p><strong>The code:</strong> <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/docs/learned-skills.md#1-unstuck-skill">how the skill works</a>, <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/unstuck/train_unstuck.py"><code>train_unstuck.py</code></a> trains, <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/unstuck/unstuck_env.py"><code>unstuck_env.py</code></a> is the environment, <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/unstuck/scenarios.py"><code>scenarios.py</code></a> generates the situations, <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/unstuck/baseline.py"><code>baseline.py</code></a> is today's recovery, and <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_rs/src/learned/unstuck.rs"><code>unstuck.rs</code></a> runs it on the robot side (turned on with <code>unstuck_skill:=true</code>). The swarm viewer is in <a href="https://github.com/Brett-D/roomba-jetson-stack/pull/2">a pull request</a> that isn't merged yet.</p>
 
 <h2>Choosing where to explore: evolution, then reinforcement learning</h2>
 <p>Which frontier to visit next is one decision every few metres, so physics doesn't matter, but it takes thousands of whole explorations to learn. So instead of Isaac Lab I wrote a simple 2D simulator in PyTorch that runs on the GPU: 2,000 generated houses on a 10 cm grid, the camera's 85° view, 3 m range and blind zone, and travel time from route length. The learned ranker scores the same candidate frontiers the explorer already finds; Nav2 still does the driving.</p>
