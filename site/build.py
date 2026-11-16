@@ -250,12 +250,54 @@ class Renderer:
         return post_list(selected, self.partials, self.base)
 
 
-def post_list(posts: list[dict], partials: dict[str, str], base: str) -> str:
+def post_thumb(post: dict) -> str:
+    """'video:key', an image path, or '' (front matter `thumb`, else the post's first video, else its first image)."""
+    thumb = post.get("thumb", "").strip()
+    if thumb:
+        return thumb
+    if m := re.search(r"\{\{video:([^|}]+)", post["body"]):
+        return f"video:{m.group(1).strip()}"
+    if m := re.search(r"\{\{img:([^|}]+)", post["body"]):
+        return f"/assets/img/{m.group(1).strip()}"
+    return ""
+
+
+def post_media(post: dict) -> str:
+    """The highlight shown with a post in the blog index: a short muted loop, a photo, or a placeholder."""
+    thumb = post_thumb(post)
+    if thumb.startswith("video:"):
+        v = CONFIG["videos"][thumb[6:]]
+        p = v.get("preview", v)
+        return (
+            '<div class="post-row__media video video--mini" data-video>'
+            f'<video muted loop playsinline preload="none" width="{p.get("width", v["width"])}" height="{p.get("height", v["height"])}" '
+            f'poster="{p["poster"]}" aria-hidden="true">'
+            f'<source src="{p["webm"]}" type="video/webm"><source src="{p["mp4"]}" type="video/mp4"></video>'
+            f'<button class="video__toggle" type="button" aria-describedby="post-{esc(post["slug"])}" hidden>'
+            '<span class="video__icon" aria-hidden="true"></span><span class="video__text">Play video</span></button></div>'
+        )
+    if thumb:
+        w, h = image_size(PUBLIC / thumb.lstrip("/"))
+        return (
+            f'<div class="post-row__media"><img src="{thumb}" alt="" width="{w}" height="{h}" '
+            'loading="lazy" decoding="async"></div>'
+        )
+    return (
+        '<div class="post-row__media post-row__media--none" aria-hidden="true">'
+        '<svg viewBox="0 0 48 48" class="soon__icon"><path d="M6 15h9l3-5h12l3 5h9v24H6z" fill="none" '
+        'stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/><circle cx="24" cy="26" r="7" fill="none" '
+        'stroke="currentColor" stroke-width="2.5"/></svg><span class="soon__label">Photo coming soon</span></div>'
+    )
+
+
+def post_list(posts: list[dict], partials: dict[str, str], base: str, media: bool = False) -> str:
+    partial = "post_card" if media else "post_item"
     items = [
         fill(
-            partials["post_item"],
+            partials[partial],
             {
                 "href": f"{base}/blog/{p['slug']}/",
+                "slug": esc(p["slug"]),
                 "title": p["title"],
                 "summary": p["summary"],
                 "date_iso": p["date"].isoformat(),
@@ -263,8 +305,9 @@ def post_list(posts: list[dict], partials: dict[str, str], base: str) -> str:
                 "minutes": p["minutes"],
                 "part": f"{p['part']:02d}",
                 "tags": tag_list(p["tags"], partials),
+                "media": post_media(p) if media else "",
             },
-            "post_item",
+            partial,
         )
         for p in posts
     ]
@@ -428,7 +471,7 @@ def build_site(posts: list[dict], pages: dict[str, dict]) -> list[str]:
     # Blog index
     blog_html = fill(
         templates["blog"],
-        {"post_list": post_list(list(reversed(posts)), partials, base), "base": base, "post_count": len(posts)},
+        {"post_list": post_list(list(reversed(posts)), partials, base, media=True), "base": base, "post_count": len(posts)},
         "blog",
     )
     emit("/blog/", "blog", "Build log", CONFIG["blog_description"], blog_html, body_class="page-blog")

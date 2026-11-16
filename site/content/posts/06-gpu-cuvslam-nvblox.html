@@ -4,6 +4,7 @@ slug: gpu-cuvslam-nvblox
 date: 2026-11-14
 tags: roomba, vslam, gpu, nav2
 summary: NVIDIA cuVSLAM for visual odometry, an EKF that fuses calibrated wheels, gyro and vision, and nvblox for obstacle mapping, all on the Jetson's GPU. Plus a frozen node, a smeared costmap and a new bump reflex.
+thumb: /assets/img/thumbs/post-gpu-stack.webp
 image: /assets/media/vslam-demo-poster.jpg
 ---
 <p>The CPU pipeline from <a href="{{base}}/blog/visual-slam-navigation/">the last navigation post</a> works, but it keeps the Jetson's six CPU cores busy while its GPU mostly sits there. This week I moved the heavy lifting onto the GPU and rebuilt how the robot works out where it is.</p>

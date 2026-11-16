@@ -5,6 +5,7 @@ scene: robot
 date: 2026-11-15
 tags: roomba, rust, ros2
 summary: Ten of the robot's ROS 2 nodes now have Rust versions, each checked against the Python original output for output. The five busiest went from about 1.3 CPU cores to under a fifth of one.
+thumb: /assets/img/thumbs/post-python-to-rust.webp
 ---
 <p>The Jetson was working too hard. On a typical exploration run its load average sat around 20 on six cores: far more work waiting than it had cores to run it on. Most of the heavy lifting was already native code: Nav2 and RTAB-Map are C++, and cuVSLAM and nvblox run on the GPU. The overhead was in the glue I'd written myself in Python. The web dashboard, the Roomba driver, the odometry watchdog and the obstacle detector each used a quarter to a half of a CPU core.</p>
 

@@ -10,6 +10,13 @@ image: /assets/media/vslam-demo-poster.jpg
 ---
 {{video:vslam}}
 
+<div class="figure-grid">
+{{video:people|The digital twin: the robot's real software exploring a simulated copy of the house as people walk past. <a href="{{base}}/blog/house-digital-twin/">How it was built</a>.}}
+{{video:twin|The twin's camera view and depth, red near to blue far. Black is out of the camera's range.}}
+{{video:unstuck|Getting unstuck: today's recovery (left) against a skill trained by reinforcement learning (right). Drawn from logged simulation runs. <a href="{{base}}/blog/training-the-roomba/">How it was trained</a>.}}
+{{video:explore|Choosing where to explore next: the explorer's rule (left) against a learned ranker (right), which didn't beat it. Drawn from logged simulation runs.}}
+</div>
+
 <section class="section" aria-labelledby="goal">
 <h2 id="goal">The goal</h2>
 <p>Old robot vacuums find walls by hitting them. I wanted to see how far a nearly twenty-year-old Roomba could go with modern robotics bolted on top: a robot that <strong>maps the house on its own</strong>, <strong>avoids obstacles it can see</strong>, and eventually becomes <strong>a smarter vacuum</strong> that cleans the rooms I pick and knows when it's finished.</p>

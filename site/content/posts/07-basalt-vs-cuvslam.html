@@ -4,6 +4,7 @@ slug: basalt-vs-cuvslam
 date: 2026-11-14
 tags: roomba, vslam, gpu
 summary: The robot can work out how it's moving with Basalt on the CPU or NVIDIA cuVSLAM on the GPU. The GPU holds still better; Basalt stays on track better once it moves. Here's the scorecard so far.
+thumb: /assets/img/thumbs/post-basalt-vs-cuvslam.webp
 ---
 <p>The robot now has two ways to work out how it's moving. <a href="{{base}}/blog/visual-slam-navigation/">Basalt</a> runs on the Jetson's CPU and <a href="{{base}}/blog/gpu-cuvslam-nvblox/">NVIDIA cuVSLAM</a> runs on its GPU. Both watch the same stereo camera and IMU, and one launch argument picks which one is in charge. That makes for a fair fight: I can record a run once and replay exactly the same camera frames through each.</p>
 

@@ -1,0 +1,10 @@
+<li class="post-row post-card" data-reveal>
+  <span class="post-row__part">#{{part}}</span>
+  {{media}}
+  <div class="post-row__body">
+    <span class="post-row__meta"><time datetime="{{date_iso}}">{{date_human}}</time> · {{minutes}} min</span>
+    <a class="post-row__title post-card__link" id="post-{{slug}}" href="{{href}}">{{title}}</a>
+    <span class="post-row__summary">{{summary}}</span>
+  </div>
+  <span class="post-row__arrow" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h11M9 4l4 4-4 4"/></svg></span>
+</li>
