@@ -18,7 +18,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="alternate" type="application/atom+xml" title="Brett's Box build log" href="/feed.xml">
 <link rel="preload" href="/assets/fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/style.css?v=3e5faff806">
+<link rel="stylesheet" href="/style.css?v=a76e6283b5">
 <script>document.documentElement.className = 'js';</script>
 <script src="/app.js?v=14adaaca4a" defer></script>
 </head>
@@ -68,7 +68,7 @@
     <a class="gcard gcard--head" href="#projects">Projects · 04 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4"/></svg></a>
     <a class="gcard gcard--tall" href="/horse-tracker/"><canvas data-thumb="horse" aria-hidden="true"></canvas><span class="gcard__meta"><i class="off"></i>PRJ-04 · Soon</span><span class="gcard__title">Horse Tracker 9000</span></a>
     <a class="gcard gcard--sq" href="/roomba/"><canvas data-thumb="robot" aria-hidden="true"></canvas><span class="gcard__meta"><i></i>PRJ-01 · Active</span><span class="gcard__title">Roomba 550</span></a>
-    <a class="gcard gcard--wide" href="/blog/python-to-rust/"><canvas data-thumb="house" aria-hidden="true"></canvas><span class="gcard__text"><b>Latest from the build log</b><span>From Python to Rust: same robot, a fraction of the CPU</span></span><svg class="gcard__go" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4"/></svg></a>
+    <a class="gcard gcard--wide" href="/blog/house-digital-twin/"><canvas data-thumb="house" aria-hidden="true"></canvas><span class="gcard__text"><b>Latest from the build log</b><span>A digital twin of the house, and teaching the robot in it</span></span><svg class="gcard__go" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M2 8h11M9 4l4 4-4 4"/></svg></a>
   </aside>
 
   <nav class="strip" aria-label="Projects in the scene">
@@ -103,7 +103,7 @@
       <ul class="pills" aria-label="Current status"><li class="pill pill--ok">Autonomous mapping</li><li class="pill pill--ok">GPU pipeline (cuVSLAM)</li><li class="pill pill--ok">Ridgid 18 V power</li><li class="pill pill--warn">Charging error 3</li><li class="pill pill--info">CPU vs GPU map comparison</li></ul>
       <div class="feature__links">
         <a class="btn" href="/roomba/">Project page</a>
-        <a class="link-arrow" href="/blog/python-to-rust/">Latest: From Python to Rust: same robot, a fraction of the CPU</a>
+        <a class="link-arrow" href="/blog/house-digital-twin/">Latest: A digital twin of the house, and teaching the robot in it</a>
       </div>
     </div>
   </div>
@@ -111,7 +111,7 @@
 
 <section class="stats" aria-label="Project vitals">
   <ul class="wrap stats__list">
-    <li data-reveal><span class="stats__num" data-count="8">8</span><span class="stats__label">Build-log entries so far</span></li>
+    <li data-reveal><span class="stats__num" data-count="9">9</span><span class="stats__label">Build-log entries so far</span></li>
     <li data-reveal><span class="stats__num">2007</span><span class="stats__label">Year the Roomba was new</span></li>
     <li data-reveal><span class="stats__num">0.3<small>cm</small></span><span class="stats__label">Parked drift in 60 s on the GPU</span></li>
     <li data-reveal><span class="stats__num">3</span><span class="stats__label">Sensors fused for its position</span></li>
@@ -123,9 +123,20 @@
     <div class="block__head" data-reveal>
       <p class="kicker">// Build log</p>
       <h2 class="block__title" id="latest-title">Fresh off the bench</h2>
-      <a class="link-arrow" href="/blog/">All 8 entries</a>
+      <a class="link-arrow" href="/blog/">All 9 entries</a>
     </div>
     <ol class="post-list"><li class="post-row" data-reveal>
+  <a class="post-row__link" href="/blog/house-digital-twin/">
+    <span class="post-row__part">#09</span>
+    <span class="post-row__body">
+      <span class="post-row__meta"><time datetime="2026-11-15">15 November 2026</time> · 7 min</span>
+      <span class="post-row__title">A digital twin of the house, and teaching the robot in it</span>
+      <span class="post-row__summary">I built a copy of the house in NVIDIA Isaac Sim where the robot's real software drives a simulated Roomba. How it was generated (it isn't an AI turning a video into a house), what it has already caught, and where I'm going next: developing navigation algorithms in Isaac Lab.</span>
+    </span>
+    <span class="post-row__arrow" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h11M9 4l4 4-4 4"/></svg></span>
+  </a>
+</li>
+<li class="post-row" data-reveal>
   <a class="post-row__link" href="/blog/python-to-rust/">
     <span class="post-row__part">#08</span>
     <span class="post-row__body">
@@ -143,17 +154,6 @@
       <span class="post-row__meta"><time datetime="2026-11-14">14 November 2026</time> · 4 min</span>
       <span class="post-row__title">Basalt vs cuVSLAM, round one: CPU or GPU?</span>
       <span class="post-row__summary">The robot can work out how it's moving with Basalt on the CPU or NVIDIA cuVSLAM on the GPU. The GPU holds still better; Basalt stays on track better once it moves. Here's the scorecard so far.</span>
-    </span>
-    <span class="post-row__arrow" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h11M9 4l4 4-4 4"/></svg></span>
-  </a>
-</li>
-<li class="post-row" data-reveal>
-  <a class="post-row__link" href="/blog/gpu-cuvslam-nvblox/">
-    <span class="post-row__part">#06</span>
-    <span class="post-row__body">
-      <span class="post-row__meta"><time datetime="2026-11-14">14 November 2026</time> · 3 min</span>
-      <span class="post-row__title">Moving the brains to the GPU: cuVSLAM, nvblox and sensor fusion</span>
-      <span class="post-row__summary">NVIDIA cuVSLAM for visual odometry, an EKF that fuses calibrated wheels, gyro and vision, and nvblox for obstacle mapping, all on the Jetson's GPU. Plus a frozen node, a smeared costmap and a new bump reflex.</span>
     </span>
     <span class="post-row__arrow" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h11M9 4l4 4-4 4"/></svg></span>
   </a>
@@ -206,7 +206,7 @@
       <p class="kicker">// Now</p>
       <h2 class="block__title" id="now-title">On the bench this week</h2>
     </div>
-    <ul class="now__list"><li>Taking the robot's new Rust nodes on their first real drive: ten of them, a fraction of the CPU of the Python originals.</li><li>Recording test drives to compare the CPU (Basalt) and GPU (cuVSLAM) pipelines' maps side by side.</li><li>Wiring an ADS1115 pack-voltage monitor so the robot parks itself before the Ridgid pack runs flat.</li><li>Still hunting the cause of Charging Error 3 (next step: borrow an oscilloscope).</li></ul>
+    <ul class="now__list"><li>Developing navigation algorithms in Isaac Lab, starting with teaching the robot to get itself unstuck in a simulated copy of the house.</li><li>Taking the robot's new Rust nodes on their first real drive: ten of them, a fraction of the CPU of the Python originals.</li><li>Recording test drives to compare the CPU (Basalt) and GPU (cuVSLAM) pipelines' maps side by side.</li><li>Wiring an ADS1115 pack-voltage monitor so the robot parks itself before the Ridgid pack runs flat.</li><li>Still hunting the cause of Charging Error 3 (next step: borrow an oscilloscope).</li></ul>
   </div>
 </section>
 

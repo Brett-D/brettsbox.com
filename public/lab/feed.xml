@@ -1,6 +1,76 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Brett&#x27;s Box build log</title><subtitle>Build notes from the bench: what I tried, what broke, what I measured and what finally worked.</subtitle><link href="https://brettsbox.com/feed.xml" rel="self"/><link href="https://brettsbox.com/"/><id>https://brettsbox.com/</id><updated>2026-11-15T00:00:00+00:00</updated><author><name>Brett</name></author>
+<entry><title>A digital twin of the house, and teaching the robot in it</title><link href="https://brettsbox.com/blog/house-digital-twin/"/><id>https://brettsbox.com/blog/house-digital-twin/</id><published>2026-11-15T00:00:00+00:00</published><updated>2026-11-15T00:00:00+00:00</updated><summary>I built a copy of the house in NVIDIA Isaac Sim where the robot&#x27;s real software drives a simulated Roomba. How it was generated (it isn&#x27;t an AI turning a video into a house), what it has already caught, and where I&#x27;m going next: developing navigation algorithms in Isaac Lab.</summary><content type="html">&lt;p&gt;Testing a robot in the real house means moving furniture, waiting for people to walk past and hoping it doesn&#x27;t fall down the stairs. So the robot now has a digital twin: a copy of the house on my PC where a simulated Roomba, with the same camera, is driven by the robot&#x27;s real software. I can run it all night, break things on purpose and watch exactly what the robot sees and decides.&lt;/p&gt;
+
+&lt;figure&gt;&lt;a href=&quot;https://brettsbox.com/assets/media/twin-depth-demo.mp4&quot;&gt;&lt;img src=&quot;https://brettsbox.com/assets/media/twin-depth-demo-poster.jpg&quot; alt=&quot;Isaac Sim recording of the simulated Roomba driving through the simulated house on its own. A follow camera shows the robot on the carpet; panels on the right show the robot&amp;#x27;s camera view and a depth heat map, red for near and blue for far, with a legend from 0.3 to 7 metres.&quot; width=&quot;1280&quot; height=&quot;720&quot;&gt;&lt;/a&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 01&lt;/span&gt; The robot&#x27;s real software exploring the simulated house on its own. Right: what its camera sees, and the depth it gets, red near to blue far. Black is outside the camera&#x27;s 0.3–7 m range.&lt;/figcaption&gt;&lt;/figure&gt;
+
+&lt;h2&gt;Two twins&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;A 2D twin&lt;/strong&gt; for speed. The real driver, Nav2, the explorer and obstacle detection run against a flat simulated house and Roomba. Nine scripted scenarios, such as starting nose to a wall, a door closing mid-run, an invisible railing, low battery and a person walking through, are scored automatically: area covered, bumps, stuck episodes and how the run ended.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;A 3D twin&lt;/strong&gt; in NVIDIA Isaac Sim for realism. The full stack (visual odometry, 3D mapping, Nav2, the explorer and the person detector) runs in Linux on the PC and drives the Roomba through the same serial protocol as the real one. Isaac Sim renders the camera, depth and IMU at the real rates, with simulated people walking around.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2&gt;How the house was generated&lt;/h2&gt;
+
+&lt;p&gt;It would be nice to say an AI watched a video and produced a finished house. That&#x27;s not what happened. It&#x27;s a semi-automated, procedural reconstruction: the floor plans supply clean structure, the robot&#x27;s own recordings supply measured geometry and alignment, and Python builds the rest. Anything nobody measured is an educated guess.&lt;/p&gt;
+
+&lt;figure class=&quot;flow flow--twin&quot; data-reveal&gt;&lt;ol class=&quot;flow__steps&quot;&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;01&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Record&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;The robot&#x27;s stereo camera maps the house; RTAB-Map exports a point cloud, an occupancy grid and a textured mesh&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;02&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Trace the plans&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;OpenCV picks out the thick wall lines; rooms, doors, windows and stairs are digitised into JSON and checked by hand&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;03&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Align&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;A rotation and translation search, then ICP, lays the plan over the robot&#x27;s map&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;04&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Build&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Python extrudes walls, floors and ceilings, adds doors, stairs, railings, materials, lights and furniture&lt;/span&gt;&lt;/li&gt;&lt;li class=&quot;flow__step&quot;&gt;&lt;span class=&quot;flow__n&quot;&gt;05&lt;/span&gt;&lt;strong class=&quot;flow__title&quot;&gt;Simulate&lt;/strong&gt;&lt;span class=&quot;flow__detail&quot;&gt;Exported as OpenUSD with collision geometry, loaded into Isaac Sim with the Roomba and its calibrated cameras&lt;/span&gt;&lt;/li&gt;&lt;/ol&gt;&lt;figcaption&gt;&lt;span class=&quot;fig-no&quot;&gt;Fig. 02&lt;/span&gt; How the simulated house was put together: measurements from the robot, structure from the floor plans, the rest generated in Python.&lt;/figcaption&gt;&lt;/figure&gt;
+
+&lt;h3&gt;1. The robot&#x27;s own scan&lt;/h3&gt;
+&lt;p&gt;The first attempt used the map the robot already had. From a recorded drive, &lt;a href=&quot;https://brettsbox.com/blog/visual-slam-navigation/&quot;&gt;RTAB-Map&lt;/a&gt; exported a point cloud, the 2D occupancy grid and a textured mesh made with Poisson surface reconstruction. It loaded, but it looked like a cave: holes wherever the camera never looked, a bumpy floor, and long stretched triangles where the mesh bridged gaps. A camera 13 cm off the floor simply doesn&#x27;t see the tops of things.&lt;/p&gt;
+
+&lt;h3&gt;2. The floor plans&lt;/h3&gt;
+&lt;p&gt;The plans had exactly what the scan lacked: straight walls and every door, window and step. OpenCV picks out the plan&#x27;s thick black wall lines, curves and diagonals included. Rooms, doors (with the side they swing to), windows, stairs, railings and fixtures were digitised into JSON, then reviewed and completed by hand. The room dimensions printed on the plan set the scale; across eight rooms they agreed to within 0.4 %.&lt;/p&gt;
+
+&lt;h3&gt;3. Lining it up with the map&lt;/h3&gt;
+&lt;p&gt;A plan is a drawing; the robot&#x27;s map is in metres, in its own frame. A search tries every rotation (and the mirror image) and slides the plan around to find where its walls best overlap the mapped walls, then ICP refines the fit. The median plan wall ends up within about 10 cm of a mapped one, and 97 % of the robot&#x27;s recorded path lands on plan floor. The rebuilt house and the robot&#x27;s real drives now share one coordinate system. The robot has only mapped one floor, so the other was stacked under it from its own plan, using the staircase to line the two up.&lt;/p&gt;
+
+&lt;h3&gt;4. Building it in Python&lt;/h3&gt;
+&lt;p&gt;From the aligned plan, a script generates extruded walls, floors, ceilings, door frames and doors, stairs, railings, materials and lights. Furniture is a mix: where the robot mapped an obstacle inside a room, a piece with that footprint goes there; elsewhere come procedural pieces and models from an asset library. The beds and dressers are stand-ins in roughly the right places, not copies of ours.&lt;/p&gt;
+
+&lt;h3&gt;5. Into Isaac Sim&lt;/h3&gt;
+&lt;p&gt;The house is exported as OpenUSD with collision geometry and loaded into Isaac Sim with a Roomba model whose frames match the real robot. The simulated cameras use the real calibration, down to the 11.8 cm stereo baseline and the 13 cm lens height. One bug worth recording: each room&#x27;s floor started as a separate box, and the physics engine snagged the caster on the seams, stopping the robot dead at doorways. One welded floor mesh fixed it.&lt;/p&gt;
+
+&lt;aside class=&quot;callout&quot;&gt;
+  &lt;p class=&quot;callout__title&quot;&gt;Measured, drawn or guessed&lt;/p&gt;
+  &lt;p&gt;&lt;strong&gt;Measured:&lt;/strong&gt; wall positions where the robot has been, the scale, the robot&#x27;s path and the camera calibration. &lt;strong&gt;From the plans:&lt;/strong&gt; the layout, doors, windows and stairs. &lt;strong&gt;Approximated:&lt;/strong&gt; anything the robot never saw, most of the furniture, and wall and ceiling heights. A few doorways sit 10–30 cm from where the map puts them, and the simulated robot gets stuck in exactly those spots.&lt;/p&gt;
+&lt;/aside&gt;
+
+&lt;h2&gt;What it has caught so far&lt;/h2&gt;
+&lt;p&gt;The point of a twin is finding problems before the real robot does. The 2D scenarios turned up seven, and most were logic bugs rather than anything a smarter algorithm would fix:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Trapping itself:&lt;/strong&gt; a bump keep-out mark could cover the robot, leaving it nowhere to go.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Skipping rooms:&lt;/strong&gt; reachable areas were written off by a hard distance cutoff.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Giving up early:&lt;/strong&gt; it could declare the house finished without a final look around, and areas blocked by a closed door or a passing person were never rechecked.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Ending elsewhere:&lt;/strong&gt; runs didn&#x27;t always finish back at the start, and Nav2 could hang at start-up.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Each fix is checked with before-and-after runs of every scenario. The depth view in the clip shows the other recurring problem: anything closer than 0.3 m is black to the camera, so a wall right in front of the robot is invisible.&lt;/p&gt;
+
+&lt;h2&gt;Where I&#x27;m going next&lt;/h2&gt;
+&lt;p&gt;This is where the project turns for me. So far most of the work has been getting a 2007 Roomba to see, map and drive at all. Next, I&#x27;m going to spend my time developing navigation algorithms of my own in NVIDIA Isaac Lab, which runs on top of Isaac Sim and teaches behaviours by trial and error (reinforcement learning) with thousands of simulated robots at once on the RTX 5090. Nav2 keeps planning the actual routes; these are the parts I want to fix:&lt;/p&gt;
+
+&lt;div class=&quot;table-wrap&quot;&gt;
+&lt;table&gt;
+  &lt;thead&gt;&lt;tr&gt;&lt;th scope=&quot;col&quot;&gt;Problem&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;Today&lt;/th&gt;&lt;th scope=&quot;col&quot;&gt;What I&#x27;ll try&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;&lt;td&gt;Getting unstuck&lt;/td&gt;&lt;td&gt;Spin, back up, clear the map, wait&lt;/td&gt;&lt;td&gt;A learned recovery skill &lt;strong&gt;(training now)&lt;/strong&gt;&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Where to explore&lt;/td&gt;&lt;td&gt;Nearest unexplored edge&lt;/td&gt;&lt;td&gt;A learned chooser that also weighs unknown area, route risk and visit order&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Thin railings&lt;/td&gt;&lt;td&gt;Join the posts the camera sees into a wall&lt;/td&gt;&lt;td&gt;Spot railings in the camera image, trained on simulated ones&lt;/td&gt;&lt;/tr&gt;
+    &lt;tr&gt;&lt;td&gt;Cleaning&lt;/td&gt;&lt;td&gt;Not yet&lt;/td&gt;&lt;td&gt;Cover the rooms I pick with the least driving, and know when it&#x27;s done&lt;/td&gt;&lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;/div&gt;
+
+&lt;h3&gt;First up: getting unstuck&lt;/h3&gt;
+&lt;p&gt;The learned version practises on 4,096 simulated Roombas at a time, each starting stuck in a different 4 × 4 m situation generated in code: nose to a wall inside the camera&#x27;s blind zone, wedged in a corner, between chair legs, under a shelf at camera height, at a railing the camera can&#x27;t see, or boxed in by its own bump marks.&lt;/p&gt;
+&lt;p&gt;It sees only what the real robot has at that moment: the nearby costmap, the light bumpers and bump switches, wheel speeds, the gyro, how far it has moved recently and where it was trying to go. It answers with a forward speed and a turn rate. It&#x27;s rewarded for getting clear and making progress towards its goal, and penalised for bumps, scraping the camera on overhangs, drops, jerky moves and wasted time. Every command still passes through the same safety layers as on the robot: the speed limits, the collision monitor and the driver&#x27;s bump and cliff reflexes.&lt;/p&gt;
+
+&lt;aside class=&quot;callout&quot;&gt;
+  &lt;p class=&quot;callout__title&quot;&gt;The rule&lt;/p&gt;
+  &lt;p&gt;Every idea gets the same treatment: design the situations it practises on, the rewards and the tests, train it on the 5090, and race it against the classical logic in both twins, on situations it never trained on. Only the winners move to the Jetson, running from the Rust nodes, and the collision monitor and the bump and cliff reflexes always stay in charge of safety. The real house gets the final say.&lt;/p&gt;
+&lt;/aside&gt;
+</content></entry>
 <entry><title>From Python to Rust: same robot, a fraction of the CPU</title><link href="https://brettsbox.com/blog/python-to-rust/"/><id>https://brettsbox.com/blog/python-to-rust/</id><published>2026-11-15T00:00:00+00:00</published><updated>2026-11-15T00:00:00+00:00</updated><summary>Ten of the robot&#x27;s ROS 2 nodes now have Rust versions, each checked against the Python original output for output. The five busiest went from about 1.3 CPU cores to under a fifth of one.</summary><content type="html">&lt;p&gt;The Jetson was working too hard. On a typical exploration run its load average sat around 20 on six cores: far more work waiting than it had cores to run it on. Most of the heavy lifting was already native code: Nav2 and RTAB-Map are C++, and cuVSLAM and nvblox run on the GPU. The overhead was in the glue I&#x27;d written myself in Python. The web dashboard, the Roomba driver, the odometry watchdog and the obstacle detector each used a quarter to a half of a CPU core.&lt;/p&gt;
 
 &lt;p&gt;So the rule for this project is now Rust wherever it&#x27;s practical. Rather than redesign anything, each Python node gets a Rust twin that is a drop-in replacement: same node name, topics, parameters, services and even log lines. One launch argument, &lt;code&gt;rust_nodes&lt;/code&gt;, picks which set runs.&lt;/p&gt;

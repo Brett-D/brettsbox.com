@@ -18,7 +18,7 @@
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="alternate" type="application/atom+xml" title="Brett's Box build log" href="/feed.xml">
 <link rel="preload" href="/assets/fonts/Inter-Variable.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/style.css?v=3e5faff806">
+<link rel="stylesheet" href="/style.css?v=a76e6283b5">
 <script>document.documentElement.className = 'js';</script>
 <script src="/app.js?v=14adaaca4a" defer></script>
 </head>
@@ -80,6 +80,8 @@
   <li><span class="pill pill--info">In progress</span><div><strong>Pack-voltage monitor</strong><span>ADS1115 on the Jetson's I2C bus so the robot stops before the pack goes flat.</span></div></li>
   <li><span class="pill pill--info">In progress</span><div><strong>CPU vs GPU comparison</strong><span>First numbers are in: <a href="/blog/basalt-vs-cuvslam/">Basalt vs cuVSLAM, round one</a>. Next, the same drive mapped by both and overlaid.</span></div></li>
   <li><span class="pill pill--info">Testing</span><div><strong>Rust rewrite</strong><span>Ten nodes ported with identical output at a fraction of the CPU: <a href="/blog/python-to-rust/">From Python to Rust</a>. Next, the first real drive on Rust.</span></div></li>
+  <li><span class="pill pill--ok">Working</span><div><strong>Digital twin</strong><span>The robot's real software drives a simulated Roomba through a copy of the house: <a href="/blog/house-digital-twin/">how it was built</a>.</span></div></li>
+  <li><span class="pill pill--info">Next</span><div><strong>Algorithms in Isaac Lab</strong><span>Developing navigation algorithms in simulation, starting with getting unstuck and choosing where to explore. Nothing goes on the robot until it beats the current logic.</span></div></li>
   <li><span class="pill pill--warn">Unresolved</span><div><strong>Charging Error 3</strong><span>Fault is in the robot's charge-control circuitry. Needs an oscilloscope to catch the self-test.</span></div></li>
 </ul>
 </section>
@@ -133,6 +135,17 @@
 <section class="section" aria-labelledby="log">
 <h2 id="log">Build log</h2>
 <ol class="post-list"><li class="post-row" data-reveal>
+  <a class="post-row__link" href="/blog/house-digital-twin/">
+    <span class="post-row__part">#09</span>
+    <span class="post-row__body">
+      <span class="post-row__meta"><time datetime="2026-11-15">15 November 2026</time> · 7 min</span>
+      <span class="post-row__title">A digital twin of the house, and teaching the robot in it</span>
+      <span class="post-row__summary">I built a copy of the house in NVIDIA Isaac Sim where the robot's real software drives a simulated Roomba. How it was generated (it isn't an AI turning a video into a house), what it has already caught, and where I'm going next: developing navigation algorithms in Isaac Lab.</span>
+    </span>
+    <span class="post-row__arrow" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8h11M9 4l4 4-4 4"/></svg></span>
+  </a>
+</li>
+<li class="post-row" data-reveal>
   <a class="post-row__link" href="/blog/python-to-rust/">
     <span class="post-row__part">#08</span>
     <span class="post-row__body">

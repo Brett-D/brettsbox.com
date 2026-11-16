@@ -23,6 +23,15 @@
       "height": 960,
       "alt": "Screen recording of the Roomba's web dashboard while it explores on its own: a grey-scale camera view on the left, and on the right a top-down map that grows as the robot drives, with its planned path drawn in purple and obstacles in red.",
       "caption": "The robot exploring on its own. Left: what the camera sees. Right: the map it builds as it goes, with the planned path in purple and obstacles in red."
+    },
+    "twin": {
+      "mp4": "/assets/media/twin-depth-demo.mp4",
+      "webm": "/assets/media/twin-depth-demo.webm",
+      "poster": "/assets/media/twin-depth-demo-poster.jpg",
+      "width": 1280,
+      "height": 720,
+      "alt": "Isaac Sim recording of the simulated Roomba driving through the simulated house on its own. A follow camera shows the robot on the carpet; panels on the right show the robot's camera view and a depth heat map, red for near and blue for far, with a legend from 0.3 to 7 metres.",
+      "caption": "The robot's real software exploring the simulated house on its own. Right: what its camera sees, and the depth it gets, red near to blue far. Black is outside the camera's 0.3–7 m range."
     }
   },
   "home": {
@@ -38,6 +47,7 @@
       { "label": "CPU vs GPU map comparison", "kind": "info" }
     ],
     "now": [
+      "Developing navigation algorithms in Isaac Lab, starting with teaching the robot to get itself unstuck in a simulated copy of the house.",
       "Taking the robot's new Rust nodes on their first real drive: ten of them, a fraction of the CPU of the Python originals.",
       "Recording test drives to compare the CPU (Basalt) and GPU (cuVSLAM) pipelines' maps side by side.",
       "Wiring an ADS1115 pack-voltage monitor so the robot parks itself before the Ridgid pack runs flat.",
@@ -127,6 +137,16 @@
         { "title": "Frame the shot", "detail": "One box around horse and rider, with a calm dead zone in the middle" },
         { "title": "Pan and tilt", "detail": "Servos turn smoothly to bring the box back to the centre" },
         { "title": "Zoom", "detail": "In to fill the frame, out to find the horse again if it's lost" }
+      ]
+    },
+    "twin": {
+      "caption": "How the simulated house was put together: measurements from the robot, structure from the floor plans, the rest generated in Python.",
+      "steps": [
+        { "title": "Record", "detail": "The robot's stereo camera maps the house; RTAB-Map exports a point cloud, an occupancy grid and a textured mesh" },
+        { "title": "Trace the plans", "detail": "OpenCV picks out the thick wall lines; rooms, doors, windows and stairs are digitised into JSON and checked by hand" },
+        { "title": "Align", "detail": "A rotation and translation search, then ICP, lays the plan over the robot's map" },
+        { "title": "Build", "detail": "Python extrudes walls, floors and ceilings, adds doors, stairs, railings, materials, lights and furniture" },
+        { "title": "Simulate", "detail": "Exported as OpenUSD with collision geometry, loaded into Isaac Sim with the Roomba and its calibrated cameras" }
       ]
     }
   }
