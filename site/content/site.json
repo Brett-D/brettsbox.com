@@ -32,6 +32,24 @@
       "height": 720,
       "alt": "Isaac Sim recording of the simulated Roomba driving through the simulated house on its own. A follow camera shows the robot on the carpet; panels on the right show the robot's camera view and a depth heat map, red for near and blue for far, with a legend from 0.3 to 7 metres.",
       "caption": "The robot's real software exploring the simulated house on its own. Right: what its camera sees, and the depth it gets, red near to blue far. Black is outside the camera's 0.3–7 m range."
+    },
+    "unstuck": {
+      "mp4": "/assets/media/learn-unstuck.mp4",
+      "webm": "/assets/media/learn-unstuck.webm",
+      "poster": "/assets/media/learn-unstuck-poster.jpg",
+      "width": 1280,
+      "height": 720,
+      "alt": "Animated top-down drawing of two grids of nine small maps each. In every map a blue disc, the Roomba, starts stuck against walls, furniture or a stair drop. Left grid: today's recovery, where several robots stay stuck and one falls down the drop. Right grid: the learned skill, where most robots drive clear and get a green ring and a 'FREE in' time.",
+      "caption": "Drawn from logged Isaac Lab runs, not robot footage. The same stuck spots, first from the house's floor plans and then generated ones: today's recovery on the left, the learned skill on the right. A green ring means it reached 0.3 m of clear space."
+    },
+    "explore": {
+      "mp4": "/assets/media/learn-explore.mp4",
+      "webm": "/assets/media/learn-explore.webm",
+      "poster": "/assets/media/learn-explore-poster.jpg",
+      "width": 1280,
+      "height": 720,
+      "alt": "Animated top-down drawing of two copies of the same house map filling in as a simulated robot explores, with orange frontier edges, numbered candidate goals and a pink star on the chosen one. Left: the explorer's rule. Right: the learned ranker. A coverage graph underneath compares the two over time.",
+      "caption": "Drawn from logged runs of the 2D simulator, not robot footage, at 30 times speed. The same start, with the rule on the left and the learned ranker on the right, first on one of the house's floor plans, then on a generated house it never trained on."
     }
   },
   "home": {
@@ -47,7 +65,7 @@
       { "label": "CPU vs GPU map comparison", "kind": "info" }
     ],
     "now": [
-      "Developing navigation algorithms in Isaac Lab, starting with teaching the robot to get itself unstuck in a simulated copy of the house.",
+      "Training navigation skills in simulation. The learned unstuck skill frees the simulated robot three times as often as today's recovery; nothing trained runs on the real robot yet.",
       "Taking the robot's new Rust nodes on their first real drive: ten of them, a fraction of the CPU of the Python originals.",
       "Recording test drives to compare the CPU (Basalt) and GPU (cuVSLAM) pipelines' maps side by side.",
       "Wiring an ADS1115 pack-voltage monitor so the robot parks itself before the Ridgid pack runs flat.",

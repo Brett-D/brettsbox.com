@@ -56,12 +56,12 @@
     <div class="readout readout--l" aria-hidden="true"></div>
     <div class="readout readout--r" aria-hidden="true"></div>
     <div class="hero__copy">
-      <p class="kicker kicker--cursor">// <a href="/blog/">Build log</a> · Entry 09 / 09</p>
+      <p class="kicker kicker--cursor">// <a href="/blog/">Build log</a> · Entry 09 / 10</p>
       <h1 class="hero__title"><span class="ln"><span>A digital twin of the house, and teaching the robot in it</span></span></h1>
       <p class="hero__lede">I built a copy of the house in NVIDIA Isaac Sim where the robot's real software drives a simulated Roomba. How it was generated (it isn't an AI turning a video into a house), what it has already caught, and where I'm going next: developing navigation algorithms in Isaac Lab.</p>
       <ul class="post-meta">
         <li><time datetime="2026-11-15">15 November 2026</time></li>
-        <li>7 min read</li>
+        <li>6 min read</li>
         <li><ul class="tags"><li class="tag">roomba</li><li class="tag">simulation</li><li class="tag">machine-learning</li></ul></li>
       </ul>
     </div>
@@ -114,23 +114,21 @@
 <p>Each fix is checked with before-and-after runs of every scenario. The depth view in the clip shows the other recurring problem: anything closer than 0.3 m is black to the camera, so a wall right in front of the robot is invisible.</p>
 
 <h2>Where I'm going next</h2>
-<p>This is where the project turns for me. So far most of the work has been getting a 2007 Roomba to see, map and drive at all. Next, I'm going to spend my time developing navigation algorithms of my own in NVIDIA Isaac Lab, which runs on top of Isaac Sim and teaches behaviours by trial and error (reinforcement learning) with thousands of simulated robots at once on the RTX 5090. Nav2 keeps planning the actual routes; these are the parts I want to fix:</p>
+<p>This is where the project turns for me. So far most of the work has been getting a 2007 Roomba to see, map and drive at all. Next, I'm spending my time developing navigation algorithms of my own in NVIDIA Isaac Lab, which runs on top of Isaac Sim and teaches behaviours by trial and error (reinforcement learning) with thousands of simulated robots at once on the RTX 5090. Nav2 keeps planning the actual routes; these are the parts I want to fix:</p>
 
 <div class="table-wrap">
 <table>
-  <thead><tr><th scope="col">Problem</th><th scope="col">Today</th><th scope="col">What I'll try</th></tr></thead>
+  <thead><tr><th scope="col">Problem</th><th scope="col">Today</th><th scope="col">Learned version</th></tr></thead>
   <tbody>
-    <tr><td>Getting unstuck</td><td>Spin, back up, clear the map, wait</td><td>A learned recovery skill <strong>(training now)</strong></td></tr>
-    <tr><td>Where to explore</td><td>Nearest unexplored edge</td><td>A learned chooser that also weighs unknown area, route risk and visit order</td></tr>
-    <tr><td>Thin railings</td><td>Join the posts the camera sees into a wall</td><td>Spot railings in the camera image, trained on simulated ones</td></tr>
+    <tr><td>Getting unstuck</td><td>Spin, back up, clear the map, wait</td><td>A recovery skill: trained, wins in simulation</td></tr>
+    <tr><td>Where to explore</td><td>Nearest unexplored edge, with a bonus for bigger ones</td><td>A ranker: trained, didn't beat the rule</td></tr>
+    <tr><td>Thin railings</td><td>Join the posts the camera sees into a wall</td><td>Spot railings in the camera image: trained, not used yet</td></tr>
     <tr><td>Cleaning</td><td>Not yet</td><td>Cover the rooms I pick with the least driving, and know when it's done</td></tr>
   </tbody>
 </table>
 </div>
 
-<h3>First up: getting unstuck</h3>
-<p>The learned version practises on 4,096 simulated Roombas at a time, each starting stuck in a different 4 × 4 m situation generated in code: nose to a wall inside the camera's blind zone, wedged in a corner, between chair legs, under a shelf at camera height, at a railing the camera can't see, or boxed in by its own bump marks.</p>
-<p>It sees only what the real robot has at that moment: the nearby costmap, the light bumpers and bump switches, wheel speeds, the gyro, how far it has moved recently and where it was trying to go. It answers with a forward speed and a turn rate. It's rewarded for getting clear and making progress towards its goal, and penalised for bumps, scraping the camera on overhangs, drops, jerky moves and wasted time. Every command still passes through the same safety layers as on the robot: the speed limits, the collision monitor and the driver's bump and cliff reflexes.</p>
+<p>How the first three were trained, and how they did: <a href="/blog/training-the-roomba/">Training the Roomba in simulation</a>.</p>
 
 <aside class="callout">
   <p class="callout__title">The rule</p>
@@ -142,7 +140,7 @@
   </div>
   <nav class="wrap post-nav" aria-label="More build-log entries">
     <a class="post-nav__link post-nav__link--Previous" href="/blog/python-to-rust/"><span class="post-nav__dir">Previous · #08</span><span class="post-nav__title">From Python to Rust: same robot, a fraction of the CPU</span></a>
-    
+    <a class="post-nav__link post-nav__link--Next" href="/blog/training-the-roomba/"><span class="post-nav__dir">Next · #10</span><span class="post-nav__title">Training the Roomba in simulation: three experiments, and what they're worth</span></a>
   </nav>
 </article>
 

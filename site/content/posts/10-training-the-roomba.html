@@ -1,0 +1,78 @@
+---
+title: "Training the Roomba in simulation: three experiments, and what they're worth"
+slug: training-the-roomba
+scene: robot
+date: 2026-11-16
+tags: roomba, machine-learning, simulation
+summary: "I trained a person detector, an unstuck skill and an exploration ranker on the RTX 5090: the data, the algorithms, the rewards and the code. One clearly beat today's logic in simulation, one didn't, and none of them runs on the real robot yet."
+image: /assets/media/learn-unstuck-poster.jpg
+---
+<p>The <a href="{{base}}/blog/house-digital-twin/">last post</a> ended with a plan: develop navigation algorithms by training them in simulation, and race each one against the robot's current logic. Three are trained. This is how, with which algorithms and code, and how they did.</p>
+
+<aside class="callout">
+  <p class="callout__title">Where this stands</p>
+  <p>Nothing trained runs on the real robot. It still uses an off-the-shelf person detector, and every result below comes from simulation. The two navigation skills are optional code paths, switched off by default.</p>
+</aside>
+
+<h2>What isn't learned</h2>
+<p>The robot drives with classical code: <a href="{{base}}/blog/visual-slam-navigation/">visual SLAM</a> for where it is, Nav2 for planning, path following, recoveries and the collision monitor, and my own nodes for floor obstacles, keep-out marks and exploring. The explorer picks its next unexplored edge (a frontier) by a fixed rule: the shortest route wins, with a small bonus for bigger frontiers, worth about 0.2 m of route per metre of frontier. The fixes in the last post were rule changes too, and the Isaac Sim clip there is this classical stack driving itself.</p>
+
+<h2>Spotting people (and railings): supervised learning</h2>
+<p>From 13 cm above the floor, people are mostly legs, close up and at odd angles, and the robot's detector (YOLO11n, trained on the general-purpose COCO photos) misses most of them. So I made training pictures from the robot's own point of view. Isaac Sim's Replicator rendered <strong>11,958 images</strong> in the house twin, with the real camera's lens, at 11–16 cm high, each with a box drawn automatically around every person and railing. To stop the model learning one house and one lighting setup, every image changes something (domain randomisation): lights and their colour, wall, floor and furniture colours, furniture placement, up to eight people walking or standing, and procedurally generated railings of different heights, spacings and materials. A model of the real camera's softness, colour cast, noise and auto-exposure, fitted to real frames, makes them look less like renders.</p>
+<p>The <strong>algorithm</strong> is supervised fine-tuning: start from the COCO-trained YOLO11 and keep training it on the labelled images (Ultralytics, AdamW optimiser, 30 epochs, 20–27 minutes). The first models mistook balusters and dark door edges for people in real footage, so a 10-epoch hard-negative round added 727 real frames with nobody in them, teaching it what isn't a person.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th scope="col">Model</th><th scope="col">People found</th><th scope="col">Correct detections</th><th scope="col">False alarms on 312 real frames</th></tr></thead>
+  <tbody>
+    <tr><td>YOLO11n, COCO only (on the robot)</td><td>28%</td><td>93%</td><td>1</td></tr>
+    <tr><td>Fine-tuned YOLO11s</td><td>70%</td><td>94%</td><td>11</td></tr>
+    <tr><td>Fine-tuned YOLO11s + real negatives</td><td><strong>75%</strong></td><td><strong>96%</strong></td><td><strong>0</strong></td></tr>
+  </tbody>
+</table>
+</div>
+<p>People found and correct detections are measured on simulated images it never trained on; for people more than 160 pixels tall it finds 88% against 36%. It runs in 5.4 ms a frame on the Jetson. The catch: I have no labelled real footage <em>with</em> people in it, so how many real people it finds is unknown. The railing class was trained but nothing uses it yet, and the robot still runs the COCO model.</p>
+<p><strong>The code:</strong> <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/isaac/scripts/gen_dataset.py"><code>gen_dataset.py</code></a> renders the images and <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/isaac/eval/train_yolo.py"><code>train_yolo.py</code></a> trains.</p>
+
+<h2>Getting unstuck: reinforcement learning</h2>
+<p>Here nobody can label the right answer, so the robot learns by trial and error. In <strong>Isaac Lab</strong>, 4,096 simulated Roombas practise at once, with full physics but no rendering, each in one of 1,536 stuck situations generated in code: nose to a wall inside the camera's blind zone, wedged in a corner, between chair legs, under a shelf at camera height, by a railing the camera can't see, at a stair edge, or boxed in by its own bump marks. Each try lasts 15 seconds, with ten decisions a second.</p>
+<ul>
+  <li><strong>It sees</strong> only what the real robot has: a 2.4 × 2.4 m patch of the costmap around it, six light bumpers, two bump switches, wheel speeds, the gyro, its last command, how far it has moved in the last second, where its goal is, and how long it has been trying.</li>
+  <li><strong>It chooses</strong> a forward speed and a turn rate, passed through the same speed limits, collision monitor and bump and cliff reflexes as on the robot.</li>
+  <li><strong>The reward:</strong> +10 for reaching 0.3 m of clear space, a little for progress towards the goal and for gaining room, −1 per bump, smaller penalties for scraping along things, touching anything with the camera or lid, jerky moves and every step taken, and −10 for falling down a drop.</li>
+  <li><strong>The randomisation:</strong> wheel strength, motor delay, sensor noise and dropouts vary between tries, and the right bump switch is ignored half the time, as on the real robot, so it can't rely on a perfect one.</li>
+</ul>
+<p>The <strong>algorithm</strong> is PPO (proximal policy optimisation, using the RSL-RL library), training a small three-layer neural network (256, 128 and 64 units). It took <strong>30.7 million steps, about 850 hours of simulated driving, in 39 minutes</strong> on the 5090. The baseline is today's recovery (Nav2's spin, back up, clear the map and wait, plus the driver's bump reflex), recreated in the same simulator with the same physics and sensors.</p>
+
+{{video:unstuck}}
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th scope="col">440 unseen situations</th><th scope="col">Today's recovery</th><th scope="col">Learned</th></tr></thead>
+  <tbody>
+    <tr><td>Freed within 15 s</td><td>28%</td><td><strong>86%</strong></td></tr>
+    <tr><td>Median time to get free</td><td>6.9 s</td><td><strong>1.5 s</strong></td></tr>
+    <tr><td>Bumps per try</td><td>0.29</td><td><strong>0.17</strong></td></tr>
+    <tr><td>Fell down a drop</td><td>1.4%</td><td><strong>0.2%</strong></td></tr>
+  </tbody>
+</table>
+</div>
+<p>On 117 spots cut from the house's own floor plans it was much the same: 85% against 30%. Its weak spots are clutter (31% freed) and chair legs (67%). Next, a closer test, still in simulation: the network, exported and run in Rust on the CPU with matching output to within 0.0000005, became an action the explorer calls when stuck, running in the 2D twin alongside the robot's real software. Over 93 calls it freed the robot 92 times, in a median of 2.5 s, and across the ten scenarios bumper hits fell from 24 to 15. But it didn't increase how much of the house got mapped, and since the explorer fixes it's rarely needed: four calls in twenty runs.</p>
+<p>It's still simulation. The simulated Roomba has rigid wheels and no rugs, its costmap is cleaner than the real camera's, and its light bumpers are an approximation. Before it drives the real robot, it needs the light bumpers calibrated, a run in the 3D twin with the full camera pipeline, and then tests with me next to it, ready to stop it.</p>
+<p><strong>The code:</strong> <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/unstuck/train_unstuck.py"><code>train_unstuck.py</code></a> trains, <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/unstuck/unstuck_env.py"><code>unstuck_env.py</code></a> is the environment, <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/unstuck/scenarios.py"><code>scenarios.py</code></a> generates the situations, <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/unstuck/baseline.py"><code>baseline.py</code></a> is today's recovery, and <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_rs/src/learned/unstuck.rs"><code>unstuck.rs</code></a> runs it on the robot side (turned on with <code>unstuck_skill:=true</code>).</p>
+
+<h2>Choosing where to explore: evolution, then reinforcement learning</h2>
+<p>Which frontier to visit next is one decision every few metres, so physics doesn't matter, but it takes thousands of whole explorations to learn. So instead of Isaac Lab I wrote a simple 2D simulator in PyTorch that runs on the GPU: 2,000 generated houses on a 10 cm grid, the camera's 85° view, 3 m range and blind zone, and travel time from route length. The learned ranker scores the same candidate frontiers the explorer already finds; Nav2 still does the driving.</p>
+<ol>
+  <li><strong>Cross-entropy method:</strong> start from the rule as a weighted sum of frontier features, try 24 variations of the weights in 12 houses, keep the best quarter, and repeat for 40 generations (18 minutes).</li>
+  <li><strong>PPO fine-tuning</strong> of a small network that also sees a 13 m crop of the map around the robot (170,000 parameters, 450,000 decisions, 17 minutes). PPO from scratch didn't beat the rule; starting from the first stage did.</li>
+</ol>
+<p>The result favours frontiers with more unknown area around them, and those further from the start. In the 2D simulator it maps the same amount in about 11% less time and with 16% less driving on 200 unseen houses, and 7% less time on the house's own floor plans. With people and doors moving, the gain disappears into the noise, and on one floor plan more goals failed.</p>
+
+{{video:explore}}
+
+<p>In the 2D twin, with Nav2's real driving and recoveries, the explorer's own look-around and finishing rules, and railings the camera can't see, it <strong>didn't beat the rule</strong>: across the ten scenarios it mapped 62.8% of the house against 64.9%, and on the floor-plan world 86.5% against 84.3% but with 16% more driving. So the rule stays (<code>goal_ranking: rule</code>).</p>
+<p><strong>The code:</strong> <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/explore/env2d.py"><code>env2d.py</code></a> is the simulator, <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/explore/train_cem.py"><code>train_cem.py</code></a> and <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/twin/learned/explore/train_explore.py"><code>train_explore.py</code></a> are the two stages, and <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/src/roomba_rs/src/learned/explore.rs"><code>explore.rs</code></a> is the robot side.</p>
+
+<h2>What it's worth</h2>
+<p>One skill is worth trying on the robot, one lost to a one-line rule, and one needs real footage before I can tell. Everything trained on one RTX 5090 under Windows 11 (Isaac Sim 6.2, Isaac Lab 3.0, PyTorch 2.11); on the robot side the networks run in Rust with tract-onnx, on the CPU. Every number, setting and command is in the repo: <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/docs/training.md">how the learned parts were trained</a> and <a href="https://github.com/Brett-D/roomba-jetson-stack/blob/main/docs/learned-skills.md">the navigation skills in detail</a>.</p>
