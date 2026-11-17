@@ -24,4 +24,4 @@ echo "brettsbox.com setup done. Updates are pulled every 2 minutes."
 }
 
 # Parse the whole function before git reset can replace this script.
-main "$@"
+main "$@"; exit

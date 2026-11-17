@@ -112,9 +112,11 @@ class DeployWiring(unittest.TestCase):
             self.assertIn("deploy/golf-deploy.sh", (DEPLOY / filename).read_text())
         script = (DEPLOY / "golf-deploy.sh").read_text()
         self.assertLess(script.index("flock -x"), script.index("systemctl stop"))
-        self.assertIn('cp -R "$repo/golf/api" "$app_dir/api"', script)
-        self.assertIn('chmod -R u=rwX,go=rX "$app_dir/api"', script)
-        self.assertIn('"$app_dir/api/migrate.py"', script)
+        self.assertIn('cp -R "$repo/golf/api" "$app_dir/api.new"', script)
+        self.assertIn('chmod -R u=rwX,go=rX "$app_dir/api.new"', script)
+        self.assertIn('"$app_dir/api.new/migrate.py"', script)
+        self.assertLess(script.index('"$app_dir/api.new/migrate.py"'), script.index("systemctl stop"))
+        self.assertIn('mv "$app_dir/api.new" "$app_dir/api"', script)
         self.assertLess(script.index("--wait 45"), script.index('>"$app_dir/deployed"'))
         self.assertIn("WorkingDirectory=/opt/brettsbox-golf/api", (DEPLOY / "golf-api.service").read_text())
         for filename in ("setup.sh", "brettsbox-pull.sh"):
@@ -136,7 +138,7 @@ class DeployWiring(unittest.TestCase):
         for filename in ("setup.sh", "golf-setup.sh", "brettsbox-pull.sh", "golf-deploy.sh", "nginx-apply.sh"):
             script = (DEPLOY / filename).read_text()
             self.assertIn("main() {", script)
-            self.assertTrue(script.rstrip().endswith('main "$@"'))
+            self.assertTrue(script.rstrip().endswith('main "$@"; exit'))
             self.assertIn("golf-doctor.sh", script)
             self.assertIn("set -Eeuo pipefail", script)
         self.assertNotIn('|| echo "Golf setup', (DEPLOY / "setup.sh").read_text())

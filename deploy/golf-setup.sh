@@ -18,6 +18,7 @@ ENV_FILE=/etc/brettsbox/golf.env
 DB_NAME=brettsbox_golf
 DB_ROLE=brettsbox_golf
 export DEBIAN_FRONTEND=noninteractive
+export LC_ALL=C.UTF-8 LANG=C.UTF-8
 
 apt-get install -y -qq python3 python3-venv postgresql-client openssl nginx iproute2 util-linux >/dev/null
 
@@ -43,7 +44,7 @@ END
 \$\$;
 SQL
   if ! runuser -u postgres -- psql -tAc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1; then
-    runuser -u postgres -- createdb --encoding=UTF8 --template=template0 -O "$DB_ROLE" "$DB_NAME"
+    runuser -u postgres -- createdb --encoding=UTF8 --template=template0 --locale=C.UTF-8 -O "$DB_ROLE" "$DB_NAME"
   fi
   umask 027
   cat >"$ENV_FILE" <<ENV
@@ -77,4 +78,4 @@ fi
 echo "Golf API answers through nginx at /api/golf/app."
 }
 
-main "$@"
+main "$@"; exit

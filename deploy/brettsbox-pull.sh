@@ -18,4 +18,4 @@ flock -u 9
 bash /srv/brettsbox/deploy/golf-deploy.sh
 }
 
-main "$@"
+main "$@"; exit

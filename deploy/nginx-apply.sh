@@ -3,7 +3,7 @@
 set -Eeuo pipefail
 
 main() {
-  local repo=/srv/brettsbox listeners action=reload status=0
+  local repo=${GOLF_REPO:-/srv/brettsbox} listeners action=reload status=0
   trap 'status=$?; bash /srv/brettsbox/deploy/golf-doctor.sh || true; exit "$status"' ERR
   install -m 644 "$repo/deploy/nginx-brettsbox.conf" /etc/nginx/sites-available/brettsbox
   ln -sf /etc/nginx/sites-available/brettsbox /etc/nginx/sites-enabled/brettsbox
@@ -17,4 +17,4 @@ main() {
   systemctl "$action" nginx
 }
 
-main "$@"
+main "$@"; exit
