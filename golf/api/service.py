@@ -47,11 +47,26 @@ def now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def text_value(value: object) -> str:
+    if isinstance(value, bytes):
+        return value.decode("utf-8")
+    if isinstance(value, memoryview):
+        return value.tobytes().decode("utf-8")
+    if isinstance(value, bytearray):
+        return bytes(value).decode("utf-8")
+    if isinstance(value, str):
+        return value
+    return str(value)
+
+
 def connect(dsn: str | None = None) -> psycopg.Connection:
     dsn = dsn or os.environ.get("GOLF_DATABASE_URL")
     if not dsn:
         raise RuntimeError("GOLF_DATABASE_URL is not configured")
-    return psycopg.connect(dsn, autocommit=True, row_factory=dict_row, connect_timeout=5)
+    # Always talk UTF-8: on a database created under the C locale (encoding SQL_ASCII, as happens
+    # when PostgreSQL is installed with a missing system locale) psycopg would otherwise return
+    # text columns as bytes.
+    return psycopg.connect(dsn, autocommit=True, row_factory=dict_row, connect_timeout=5, client_encoding="UTF8")
 
 
 def is_staff(user: dict | None) -> bool:
@@ -68,7 +83,7 @@ def require(condition: bool, status: int, message: str) -> None:
 def load_settings(cur, lock: str = "") -> dict:
     cur.execute(f"SELECT {', '.join(SETTINGS_COLUMNS)} FROM golf_settings WHERE singleton {lock}")
     settings = dict(cur.fetchone())
-    settings["zone"] = ZoneInfo(settings["time_zone"])
+    settings["zone"] = ZoneInfo(text_value(settings["time_zone"]))
     settings["round"] = timedelta(minutes=settings["average_round_minutes"])
     return settings
 
@@ -1386,10 +1401,10 @@ def update_settings(conn, user: dict, payload: dict) -> dict:
             new["course_name"] = domain.clean_text(payload["course_name"], "Course name", 80)
         if "time_zone" in payload:
             try:
-                ZoneInfo(str(payload["time_zone"]))
+                ZoneInfo(text_value(payload["time_zone"]))
             except (ZoneInfoNotFoundError, ValueError):
                 raise RuleError("Unknown time zone; use a name like America/Los_Angeles") from None
-            new["time_zone"] = str(payload["time_zone"])
+            new["time_zone"] = text_value(payload["time_zone"])
         for key, label in (("opening_time", "Opening time"), ("closing_time", "Last tee time")):
             if key in payload:
                 new[key] = domain.parse_hhmm(payload[key], label)

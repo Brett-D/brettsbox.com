@@ -1,142 +1,147 @@
-"""Deployment checks for the golf API: the pieces in deploy/ must agree with each other, setup must
-fail loudly when the API doesn't answer, and the health check must recognise the real API."""
+"""Deployment wiring and executable health/listener regression checks (no root required)."""
 from __future__ import annotations
 
-import importlib.util
+import http.server
 import json
 import os
-import re
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import threading
 import unittest
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEPLOY = ROOT / "deploy"
-
-
-def read(name: str) -> str:
-    return (DEPLOY / name).read_text(encoding="utf-8")
-
-
-def load_check():
-    spec = importlib.util.spec_from_file_location("golf_check", DEPLOY / "golf-check.py")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-class DeployWiring(unittest.TestCase):
-    def test_service_nginx_and_checks_use_the_same_loopback_port(self):
-        unit = read("golf-api.service")
-        port = re.search(r"--bind 127\.0\.0\.1:(\d+)", unit).group(1)
-        nginx = read("nginx-brettsbox.conf")
-        api_block = nginx[nginx.index("location ^~ /api/golf/"):]
-        self.assertIn(f"proxy_pass http://127.0.0.1:{port};", api_block)
-        self.assertIn(f"http://127.0.0.1:{port}/api/golf/app", read("golf-deploy.sh"))
-        self.assertIn(f":{port}", read("golf-doctor.sh"))
-
-    def test_service_runs_the_deployed_copy_not_the_checkout(self):
-        # The service user must never need access to /srv (where the checkout's permissions belong
-        # to nginx), and git updates must not change files under running workers.
-        unit = read("golf-api.service")
-        workdir = re.search(r"^WorkingDirectory=(.+)$", unit, re.M).group(1)
-        self.assertEqual(workdir, "/opt/brettsbox-golf/api")
-        deploy = read("golf-deploy.sh")
-        self.assertIn("local app=/opt/brettsbox-golf", deploy)
-        self.assertIn('mv "$app/api.new" "$app/api"', deploy)
-        self.assertNotIn("/srv/", unit)
-
-    def test_setup_fails_loudly_unless_the_api_answers_through_nginx(self):
-        setup = read("setup.sh")
-        line = next(l for l in setup.splitlines() if "golf-setup.sh" in l and not l.lstrip().startswith("#"))
-        self.assertNotIn("||", line, "a golf failure must fail setup.sh")
-        golf = read("golf-setup.sh")
-        self.assertIn('bash "$repo/deploy/golf-deploy.sh"', golf)
-        # nginx is applied after the API is up, then checked end to end.
-        self.assertLess(golf.index("golf-deploy.sh"), golf.index("nginx-apply.sh"))
-        self.assertIn("--host brettsbox.com", golf)
-        self.assertIn("golf-doctor.sh", golf)
-
-    def test_nginx_changes_are_applied_with_a_restart_when_a_reload_cannot(self):
-        # The live failure: nginx kept the original `listen 80` config because a reload can't swap
-        # 0.0.0.0:80 for 127.0.0.1:80, and `systemctl reload` reported success anyway.
-        self.assertIn("bash /srv/brettsbox/deploy/nginx-apply.sh", read("setup.sh"))
-        self.assertNotIn("systemctl reload nginx", read("setup.sh"))
-        apply = read("nginx-apply.sh")
-        detect = apply[apply.index("ss -Hltn"):]
-        self.assertIn(r"grep -qvE '^(127\.0\.0\.1|\[::1\]):80$'", detect)
-        self.assertLess(detect.index("systemctl restart nginx"), detect.index("systemctl reload nginx"))
-        listens = re.findall(r"^\s*listen\s+(\S+)", read("nginx-brettsbox.conf"), re.M)
-        self.assertEqual(listens, ["127.0.0.1:80", "[::1]:80"])
-
-    def test_scripts_are_read_in_full_before_they_run(self):
-        # setup.sh resets the checkout it runs from; bash must not read the replaced file midway.
-        for name in ("setup.sh", "golf-setup.sh", "golf-deploy.sh", "nginx-apply.sh"):
-            text = read(name).rstrip()
-            self.assertTrue(text.endswith('main "$@"\nexit'), name)
-
-    def test_nginx_routes_golf_before_the_static_site(self):
-        nginx = read("nginx-brettsbox.conf")
-        self.assertLess(nginx.index("location ^~ /api/golf/"), nginx.index("location / {"))
-        golf_block = nginx[nginx.index("location ^~ /golf/"):nginx.index("location / {")]
-        self.assertIn('Cache-Control "no-cache"', golf_block)
-
-
-class Handler(BaseHTTPRequestHandler):
-    routes: dict[str, tuple[int, str, bytes]] = {}
-
-    def do_GET(self):
-        status, kind, body = self.routes.get(self.path, (404, "text/html", b"<h1>Page not found</h1>"))
-        self.send_response(status)
-        self.send_header("Content-Type", kind)
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-
-    def log_message(self, *args):
-        pass
+APP = {"course": {"name": "Golf"}, "today": "2026-11-17", "now": "2026-11-17T09:00:00Z", "user": None}
 
 
 class HealthCheck(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.check = staticmethod(load_check().check)
-        Handler.routes = {
-            "/api/golf/app": (200, "application/json", json.dumps({"course": {}, "user": None}).encode()),
-            "/api/golf/broken": (500, "application/json", b'{"error":"Something went wrong"}'),
-        }
-        cls.server = HTTPServer(("127.0.0.1", 0), Handler)
-        cls.base = f"http://127.0.0.1:{cls.server.server_port}"
-        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
+    def check_response(self, body, content_type="application/json", status=200, wait=0):
+        class Handler(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(status)
+                self.send_header("Content-Type", content_type)
+                self.end_headers()
+                self.wfile.write(body)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.server.shutdown()
-        cls.server.server_close()
+            def log_message(self, *args):
+                pass
 
-    def test_accepts_the_golf_api(self):
-        self.assertIsNone(self.check(f"{self.base}/api/golf/app", None))
+        with http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
+            thread = threading.Thread(target=server.serve_forever)
+            thread.start()
+            try:
+                # Even loopback must ignore proxies, including when no_proxy is empty.
+                env = dict(os.environ, http_proxy="http://127.0.0.1:1",
+                           HTTP_PROXY="http://127.0.0.1:1", no_proxy="", NO_PROXY="")
+                return subprocess.run(
+                    [sys.executable, str(DEPLOY / "golf-health.py"), "--wait", str(wait),
+                     f"http://127.0.0.1:{server.server_port}/api/golf/app"],
+                    env=env, capture_output=True, text=True, timeout=5,
+                )
+            finally:
+                server.shutdown()
+                thread.join()
 
-    def test_rejects_the_static_site_404_page(self):
-        # What https://brettsbox.com/api/golf/app returned while nginx still had the old config.
-        problem = self.check(f"{self.base}/api/golf/missing", "brettsbox.com")
-        self.assertIn("HTTP 404", problem)
+    def test_api_answer_ignores_proxy(self):
+        result = self.check_response(json.dumps(APP).encode())
+        self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_reports_api_errors(self):
-        self.assertIn("HTTP 500", self.check(f"{self.base}/api/golf/broken", None))
+    def test_live_site_404_page_is_not_an_api_answer(self):
+        result = self.check_response((ROOT / "public" / "404.html").read_bytes(), "text/html", 404)
+        self.assertNotEqual(result.returncode, 0)
 
-    def test_ignores_proxy_settings_for_the_local_check(self):
-        saved = {key: os.environ.get(key) for key in ("http_proxy", "HTTP_PROXY", "no_proxy", "NO_PROXY")}
-        os.environ.update(http_proxy="http://127.0.0.1:9", HTTP_PROXY="http://127.0.0.1:9", no_proxy="", NO_PROXY="")
-        try:
-            self.assertIsNone(self.check(f"{self.base}/api/golf/app", None))
-        finally:
-            for key, value in saved.items():
-                if value is None:
-                    os.environ.pop(key, None)
-                else:
-                    os.environ[key] = value
+    def test_html_success_is_not_an_api_answer(self):
+        self.assertNotEqual(self.check_response(b"<html>not the API</html>", "text/html").returncode, 0)
+
+    def test_json_error_or_unrelated_json_is_not_an_api_answer(self):
+        for body in (b'{"error":"unavailable"}', b"[]", b"null", b"{broken"):
+            with self.subTest(body=body):
+                self.assertNotEqual(self.check_response(body).returncode, 0)
+
+    def test_wait_expires_on_unhealthy_response(self):
+        self.assertNotEqual(self.check_response(b"{}", wait=0.1).returncode, 0)
+
+
+class NginxApply(unittest.TestCase):
+    def apply(self, listeners, active=True):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            log = path / "commands"
+            commands = {
+                "install": 'echo install >>"$COMMAND_LOG"',
+                "ln": ":",
+                "rm": ":",
+                "nginx": 'echo "nginx $*" >>"$COMMAND_LOG"',
+                "ss": 'printf "%s\\n" "$LISTENERS"',
+                "systemctl": 'echo "systemctl $*" >>"$COMMAND_LOG"\n'
+                             'if [ "$1" = is-active ]; then exit "$ACTIVE_STATUS"; fi',
+            }
+            for name, script in commands.items():
+                command = path / name
+                command.write_text("#!/bin/sh\n" + script + "\n")
+                command.chmod(0o755)
+            result = subprocess.run(
+                ["bash", str(DEPLOY / "nginx-apply.sh")],
+                env=dict(os.environ, PATH=tmp + os.pathsep + os.environ["PATH"],
+                         COMMAND_LOG=str(log), LISTENERS=listeners, ACTIVE_STATUS="0" if active else "3"),
+                capture_output=True, text=True, timeout=5,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            lines = log.read_text().splitlines()
+            self.assertLess(lines.index("nginx -t"), len(lines) - 1)
+            return lines[-1]
+
+    def test_wildcard_or_nonloopback_listener_requires_restart(self):
+        for address in ("0.0.0.0:80", "[::]:80", "*:80", "192.168.1.140:80"):
+            with self.subTest(address=address):
+                self.assertEqual(self.apply(f"LISTEN 0 511 {address} 0.0.0.0:*"), "systemctl restart nginx")
+
+    def test_loopback_only_listeners_reload(self):
+        self.assertEqual(self.apply("LISTEN 0 511 127.0.0.1:80 0.0.0.0:*\n"
+                                    "LISTEN 0 511 [::1]:80 [::]:*"), "systemctl reload nginx")
+
+    def test_stopped_nginx_is_started(self):
+        self.assertEqual(self.apply("", active=False), "systemctl restart nginx")
+
+
+class DeployWiring(unittest.TestCase):
+    def test_setup_and_timer_share_locked_deployment(self):
+        for filename in ("golf-setup.sh", "brettsbox-pull.sh"):
+            self.assertIn("deploy/golf-deploy.sh", (DEPLOY / filename).read_text())
+        script = (DEPLOY / "golf-deploy.sh").read_text()
+        self.assertLess(script.index("flock -x"), script.index("systemctl stop"))
+        self.assertIn('cp -R "$repo/golf/api" "$app_dir/api.new"', script)
+        self.assertIn('chmod -R u=rwX,go=rX "$app_dir/api.new"', script)
+        self.assertIn('"$app_dir/api.new/migrate.py"', script)
+        self.assertLess(script.index('"$app_dir/api.new/migrate.py"'), script.index("systemctl stop"))
+        self.assertIn('mv "$app_dir/api.new" "$app_dir/api"', script)
+        self.assertLess(script.index("--wait 45"), script.index('>"$app_dir/deployed"'))
+        self.assertIn("WorkingDirectory=/opt/brettsbox-golf/api", (DEPLOY / "golf-api.service").read_text())
+        for filename in ("setup.sh", "brettsbox-pull.sh"):
+            updater = (DEPLOY / filename).read_text()
+            self.assertIn("exec 9>/run/brettsbox-golf-deploy.lock", updater)
+            self.assertLess(updater.index("flock -x 9"), updater.index("reset -q --hard"))
+            self.assertLess(updater.index("reset -q --hard"), updater.index("flock -u 9"))
+        self.assertIn("exec 9>/run/brettsbox-golf-deploy.lock", script)
+        self.assertLess(script.index('rm -f "$app_dir/deployed"'), script.index("systemctl stop"))
+
+    def test_setup_applies_nginx_after_api_and_checks_proxy(self):
+        for filename in ("setup.sh", "golf-setup.sh"):
+            self.assertIn("deploy/nginx-apply.sh", (DEPLOY / filename).read_text())
+        script = (DEPLOY / "golf-setup.sh").read_text()
+        self.assertLess(script.index("deploy/golf-deploy.sh"), script.index("deploy/nginx-apply.sh"))
+        self.assertIn("http://127.0.0.1/api/golf/app", script)
+        self.assertIn("systemctl restart nginx", script)
+        self.assertIn("--encoding=UTF8 --template=template0", script)
+        for filename in ("setup.sh", "golf-setup.sh", "brettsbox-pull.sh", "golf-deploy.sh", "nginx-apply.sh"):
+            script = (DEPLOY / filename).read_text()
+            self.assertIn("main() {", script)
+            self.assertTrue(script.rstrip().endswith('main "$@"; exit'))
+            self.assertIn("golf-doctor.sh", script)
+            self.assertIn("set -Eeuo pipefail", script)
+        self.assertNotIn('|| echo "Golf setup', (DEPLOY / "setup.sh").read_text())
 
 
 if __name__ == "__main__":

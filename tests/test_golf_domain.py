@@ -7,12 +7,18 @@ from datetime import date, datetime, time, timedelta, timezone
 import golf_support  # noqa: F401  (puts golf/api on the import path)
 import domain
 import security
+import service
 from domain import RuleError
 
 UTC = timezone.utc
 
 
 class TeeSheetRules(unittest.TestCase):
+    def test_database_time_zone_bytes_are_normalized(self):
+        self.assertEqual(service.text_value(b"America/Los_Angeles"), "America/Los_Angeles")
+        self.assertEqual(service.text_value(bytearray(b"UTC")), "UTC")
+        self.assertEqual(service.text_value(memoryview(b"America/New_York")), "America/New_York")
+
     def test_slots_run_from_opening_to_last_tee_time_inclusive(self):
         self.assertEqual([domain.hhmm(t) for t in domain.tee_slots(time(7), time(8), 20)],
                          ["07:00", "07:20", "07:40", "08:00"])

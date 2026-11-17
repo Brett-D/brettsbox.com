@@ -1,28 +1,20 @@
 #!/bin/bash
-# Install the site's nginx config and make sure nginx is really running it. Run as root; used by
-# setup.sh and golf-setup.sh.
-#
-# `systemctl reload nginx` reports success even when nginx can't apply the new config. Moving from
-# the original `listen 80` (0.0.0.0:80) to the loopback-only listeners is such a case: the running
-# nginx still holds 0.0.0.0:80, binding 127.0.0.1:80 fails with "Address already in use", and it
-# quietly keeps serving the old config. So restart whenever nginx listens beyond loopback.
-set -euo pipefail
+# A reload cannot replace a wildcard listener with an overlapping loopback listener.
+set -Eeuo pipefail
 
 main() {
-  local repo=${GOLF_REPO:-/srv/brettsbox}
+  local repo=${GOLF_REPO:-/srv/brettsbox} listeners action=reload status=0
+  trap 'status=$?; bash /srv/brettsbox/deploy/golf-doctor.sh || true; exit "$status"' ERR
   install -m 644 "$repo/deploy/nginx-brettsbox.conf" /etc/nginx/sites-available/brettsbox
   ln -sf /etc/nginx/sites-available/brettsbox /etc/nginx/sites-enabled/brettsbox
   rm -f /etc/nginx/sites-enabled/default
   nginx -t
-  if ! systemctl is-active --quiet nginx; then
-    systemctl start nginx
-  elif ss -Hltn 'sport = :80' | awk '{print $4}' | grep -qvE '^(127\.0\.0\.1|\[::1\]):80$'; then
-    echo "nginx is still listening beyond loopback (an older config); restarting it to apply the new one."
-    systemctl restart nginx
-  else
-    systemctl reload nginx
+  listeners=$(ss -H -ltn 'sport = :80')
+  if ! systemctl is-active --quiet nginx || \
+      awk '$4 !~ /^(127\.[0-9.]+|\[::1\]|::1):80$/ { found=1 } END { exit !found }' <<<"$listeners"; then
+    action=restart
   fi
+  systemctl "$action" nginx
 }
 
-main "$@"
-exit
+main "$@"; exit

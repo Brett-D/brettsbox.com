@@ -1,60 +1,44 @@
 #!/bin/bash
-# Deploy the golf API from the checkout. Used by golf-setup.sh and by the pull timer whenever
-# golf/api changes. Run as root.
-#
-# The code is copied to /opt/brettsbox-golf/api (swapped in at once), so git updates never change
-# files under running workers and the service user never needs access to /srv. New requirements
-# are installed, migrations applied, and the service restarted; the deploy only counts as done
-# once the API answers on loopback. Otherwise it prints diagnostics and exits non-zero, and the
-# pull timer retries on its next run.
-set -euo pipefail
+# Shared by initial setup and the pull timer. Mark deployed only after a healthy restart.
+set -Eeuo pipefail
 
 main() {
-  local repo=${GOLF_REPO:-/srv/brettsbox}
-  local app=/opt/brettsbox-golf
-  local venv=$app/venv
-  local env_file=/etc/brettsbox/golf.env
-
-  # One deploy at a time (setup and the pull timer can overlap).
+  local repo=${GOLF_REPO:-/srv/brettsbox} app_dir=/opt/brettsbox-golf want status=0
+  trap 'status=$?; bash /srv/brettsbox/deploy/golf-doctor.sh || true; exit "$status"' ERR
+  install -d -m 755 "$app_dir"
   exec 9>/run/brettsbox-golf-deploy.lock
-  flock 9
-
-  rm -rf "$app/api.new"
-  cp -r "$repo/golf/api" "$app/api.new"
-  rm -rf "$app/api.new/__pycache__"
-  chmod -R u=rwX,go=rX "$app/api.new"
-
-  local want have
-  want=$(sha256sum <"$app/api.new/requirements.txt" | cut -d' ' -f1)
-  have=$(cat "$app/requirements.sha256" 2>/dev/null || true)
-  if [ "$want" != "$have" ]; then
-    "$venv/bin/pip" install --disable-pip-version-check -q -r "$app/api.new/requirements.txt"
-    echo "$want" >"$app/requirements.sha256"
+  flock -x 9
+  want=$(git -C "$repo" rev-parse HEAD:golf/api)
+  if [ "${1:-}" != --force ] && [ -d "$app_dir/api" ] && \
+      [ "$want" = "$(cat "$app_dir/deployed" 2>/dev/null)" ]; then
+    return 0
   fi
-
+  rm -f "$app_dir/deployed"
+  [ -x "$app_dir/venv/bin/python" ] || python3 -m venv "$app_dir/venv"
+  rm -rf "$app_dir/api.new"
+  cp -R "$repo/golf/api" "$app_dir/api.new"
+  rm -rf "$app_dir/api.new/__pycache__"
+  chown -R root:root "$app_dir/api.new"
+  chmod -R u=rwX,go=rX "$app_dir/api.new"
+  if ! sha256sum -c --status "$app_dir/requirements.sha256" 2>/dev/null; then
+    "$app_dir/venv/bin/pip" install --disable-pip-version-check -q -r "$app_dir/api.new/requirements.txt"
+    sha256sum "$repo/golf/api/requirements.txt" >"$app_dir/requirements.sha256"
+  fi
   set -a
   # shellcheck source=/dev/null
-  . "$env_file"
+  . /etc/brettsbox/golf.env
   set +a
-  "$venv/bin/python" "$app/api.new/migrate.py"
-
-  install -m 644 "$repo/deploy/golf-api.service" "$repo/deploy/golf-backup.service" "$repo/deploy/golf-backup.timer" /etc/systemd/system/
+  "$app_dir/venv/bin/python" "$app_dir/api.new/migrate.py"
+  install -m 644 "$repo/deploy/golf-api.service" /etc/systemd/system/
   systemctl daemon-reload
-  rm -rf "$app/api.old"
-  if [ -d "$app/api" ]; then mv "$app/api" "$app/api.old"; fi
-  mv "$app/api.new" "$app/api"
-  systemctl enable golf-api.service golf-backup.timer >/dev/null 2>&1
+  systemctl stop golf-api.service
+  rm -rf "$app_dir/api.old"
+  if [ -d "$app_dir/api" ]; then mv "$app_dir/api" "$app_dir/api.old"; fi
+  mv "$app_dir/api.new" "$app_dir/api"
   systemctl restart golf-api.service
-  systemctl start golf-backup.timer
-
-  if ! "$venv/bin/python" "$repo/deploy/golf-check.py" http://127.0.0.1:8787/api/golf/app; then
-    echo "The golf API did not start. Diagnostics:" >&2
-    bash "$repo/deploy/golf-doctor.sh" >&2 || true
-    exit 1
-  fi
-  git -C "$repo" rev-parse HEAD:golf/api >"$app/deployed" 2>/dev/null || rm -f "$app/deployed"
-  echo "Golf API deployed and answering on 127.0.0.1:8787."
+  python3 "$repo/deploy/golf-health.py" --wait 45 http://127.0.0.1:8787/api/golf/app
+  printf '%s\n' "$want" >"$app_dir/deployed"
+  echo "Golf API is up on 127.0.0.1:8787."
 }
 
-main "$@"
-exit
+main "$@"; exit

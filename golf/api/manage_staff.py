@@ -21,7 +21,7 @@ def main(argv: list[str]) -> int:
         return 1
     role = "staff" if argv[0] == "promote" else "user"
     email = argv[1].strip().lower()
-    with psycopg.connect(dsn) as conn:
+    with psycopg.connect(dsn, client_encoding="UTF8") as conn:
         row = conn.execute("UPDATE golf_users SET role = %s WHERE email = %s RETURNING email", (role, email)).fetchone()
     if not row:
         print(f"No golf account for {email}; they need to sign up in the app first", file=sys.stderr)
