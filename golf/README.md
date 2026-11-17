@@ -100,7 +100,7 @@ demote anyone on the server:
 
 ```bash
 set -a; . /etc/brettsbox/golf.env; set +a
-/opt/brettsbox-golf/venv/bin/python /srv/brettsbox/golf/api/manage_staff.py promote someone@example.com
+/opt/brettsbox-golf/venv/bin/python /opt/brettsbox-golf/api/manage_staff.py promote someone@example.com
 ```
 
 ## Deploying
@@ -113,19 +113,25 @@ GOLF_BOOTSTRAP_STAFF_EMAIL=you@example.com bash /srv/brettsbox/deploy/setup.sh
 
 `setup.sh` sets up the static site as before, then runs `deploy/golf-setup.sh`, which:
 
-1. installs PostgreSQL, creates the `brettsbox_golf` database and a login role with a random password, and writes
+1. installs PostgreSQL, creates the UTF-8 `brettsbox_golf` database and a login role with a random password, and writes
    `/etc/brettsbox/golf.env` (owner `root:brettsbox-golf`, mode 640; never in Git). To use a PostgreSQL server
    elsewhere, write that file with your own `GOLF_DATABASE_URL` first and the local install is skipped;
 2. creates the `brettsbox-golf` system user and a virtualenv in `/opt/brettsbox-golf/venv`;
-3. applies migrations, installs `golf-api.service` (gunicorn on 127.0.0.1:8787 as `brettsbox-golf`) and
-   `golf-backup.timer`, and waits for the API to answer.
+3. runs `deploy/golf-deploy.sh` under a lock to copy the API to `/opt/brettsbox-golf/api` (so the service
+   does not need access to the checkout), install requirements, migrate and restart `golf-api.service`
+   (gunicorn on 127.0.0.1:8787 as `brettsbox-golf`), waiting up to 45 seconds for a real API response;
+4. installs `golf-backup.timer`, re-applies nginx and checks the API through nginx, restarting nginx once
+   if that check fails.
 
 It is safe to re-run. nginx relays `/api/golf/*` to the API (with a sign-in rate limit per visitor) and serves
 `/golf/` with `Cache-Control: no-cache` and a strict Content-Security-Policy.
+Both setup scripts use `deploy/nginx-apply.sh`: it tests the config and restarts nginx when an existing
+port 80 listener is not loopback-only (a reload cannot move a wildcard listener to loopback).
+Otherwise it reloads nginx.
 
 After that, pushing to `main` is still all it takes: the pull timer updates the files, and whenever `golf/api/`
 differs from the last version that deployed successfully it installs new requirements, applies migrations and
-restarts the API (a failed attempt is retried on the next run). If a push changes the nginx
+restarts the API using the same locked deploy helper (a failed attempt is retried on the next run). If a push changes the nginx
 config or the systemd units, re-run `setup.sh`.
 
 `/etc/brettsbox/golf.env` settings:
@@ -144,6 +150,20 @@ Useful commands:
 systemctl status golf-api.service
 journalctl -u golf-api.service -f
 systemctl list-timers golf-backup.timer
+bash /srv/brettsbox/deploy/golf-doctor.sh
+```
+
+Setup failures exit nonzero and print the doctor diagnostics: service status/logs, direct/nginx/public API
+checks, nginx config on disk, listeners/errors, and Cloudflare tunnel status. The doctor ends with
+`All good` on success. If local checks pass but the public site is served by a different nginx, check
+that the Cloudflare tunnel points at CT 140.
+
+To repair an existing CT 140 deployment, run as root:
+
+```bash
+git -C /srv/brettsbox fetch -q --depth 1 origin main && git -C /srv/brettsbox reset -q --hard origin/main
+bash /srv/brettsbox/deploy/setup.sh
+bash /srv/brettsbox/deploy/golf-doctor.sh
 ```
 
 ## Backups and restore
