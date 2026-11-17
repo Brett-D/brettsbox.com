@@ -3,7 +3,7 @@
 
 Content lives in site/content; the theme in site/themes/<theme> (set in site.json) supplies the
 templates, partials and static files (CSS, JS, favicon). Running this script regenerates
-everything in public/ except assets/ and 404.html, which are committed by hand:
+everything in public/ except assets/, 404.html and the golf/ app, which are committed by hand:
 
     python site/build.py
 
@@ -32,8 +32,9 @@ CONTENT = SITE / "content"
 CONFIG = json.loads((CONTENT / "site.json").read_text(encoding="utf-8"))
 ORIGIN = CONFIG["origin"].rstrip("/")
 THEME = SITE / "themes" / CONFIG["theme"]
-# Everything else in public/ is generated and removed before each build.
-KEEP = {"assets", "404.html"}
+# Everything else in public/ is generated and removed before each build. golf/ is the hand-written
+# golf tee sheet app (see golf/README.md); the generator never touches it.
+KEEP = {"assets", "404.html", "golf"}
 # Two designs were once on trial under /lab/ and /blueprint/; their old URLs redirect to the root.
 LEGACY_PREFIXES = ("lab", "blueprint")
 
@@ -575,7 +576,7 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Build brettsbox.com into public/.")
     parser.add_argument("--theme", help="build with this theme from site/themes instead of the one in site.json")
     parser.add_argument("--out", help="build into this scratch folder instead of public/ (for previews); "
-                                      "it is cleared except for assets/ and 404.html, which are copied from public/")
+                                      "it is cleared except for assets/, 404.html and golf/, which are copied from public/")
     args = parser.parse_args(argv)
     theme = args.theme or CONFIG["theme"]
     THEME = SITE / "themes" / theme
@@ -588,6 +589,8 @@ def main(argv: list[str]) -> int:
         out.mkdir(parents=True, exist_ok=True)
         shutil.copytree(PUBLIC / "assets", out / "assets", dirs_exist_ok=True)
         shutil.copy2(PUBLIC / "404.html", out / "404.html")
+        if (PUBLIC / "golf").is_dir():
+            shutil.copytree(PUBLIC / "golf", out / "golf", dirs_exist_ok=True)
         PUBLIC = out
     written = build_site(load_posts(), load_pages())
     print(f"Built {len(written)} files with the {theme} theme into {PUBLIC} "
