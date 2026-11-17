@@ -6,7 +6,7 @@ main() {
   local repo=/srv/brettsbox app_dir=/opt/brettsbox-golf want status=0
   trap 'status=$?; bash /srv/brettsbox/deploy/golf-doctor.sh || true; exit "$status"' ERR
   install -d -m 755 "$app_dir"
-  exec 9>/run/lock/brettsbox-golf-deploy.lock
+  exec 9>/run/brettsbox-golf-deploy.lock
   flock -x 9
   want=$(git -C "$repo" rev-parse HEAD:golf/api)
   if [ "${1:-}" != --force ] && [ -d "$app_dir/api" ] && \

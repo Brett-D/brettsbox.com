@@ -117,6 +117,13 @@ class DeployWiring(unittest.TestCase):
         self.assertIn('"$app_dir/api/migrate.py"', script)
         self.assertLess(script.index("--wait 45"), script.index('>"$app_dir/deployed"'))
         self.assertIn("WorkingDirectory=/opt/brettsbox-golf/api", (DEPLOY / "golf-api.service").read_text())
+        for filename in ("setup.sh", "brettsbox-pull.sh"):
+            updater = (DEPLOY / filename).read_text()
+            self.assertIn("exec 9>/run/brettsbox-golf-deploy.lock", updater)
+            self.assertLess(updater.index("flock -x 9"), updater.index("reset -q --hard"))
+            self.assertLess(updater.index("reset -q --hard"), updater.index("flock -u 9"))
+        self.assertIn("exec 9>/run/brettsbox-golf-deploy.lock", script)
+        self.assertLess(script.index('rm -f "$app_dir/deployed"'), script.index("systemctl stop"))
 
     def test_setup_applies_nginx_after_api_and_checks_proxy(self):
         for filename in ("setup.sh", "golf-setup.sh"):
