@@ -11,6 +11,7 @@ import threading
 import unittest
 from datetime import datetime, timedelta
 
+import golf_support
 from golf_support import Client, GolfDatabaseTest, drop_template
 
 
@@ -484,6 +485,75 @@ class SecurityTests(GolfDatabaseTest):
         import migrate
         self.assertEqual(migrate.migrate(self.dsn, quiet=True), [])
 
+    def test_legacy_initial_schema_is_reconciled_before_migrations_rerun(self):
+        import migrate
+        self.sql("DROP TABLE golf_schema_migrations")
+        self.assertEqual(migrate.migrate(self.dsn, quiet=True), [])
+        self.assertEqual(
+            self.sql("SELECT filename FROM golf_schema_migrations"),
+            [{"filename": "001_initial.sql"}],
+        )
+        self.assertEqual(migrate.migrate(self.dsn, quiet=True), [])
+
+
+@unittest.skipUnless(golf_support.TEST_DSN, "set GOLF_TEST_DATABASE_URL to a PostgreSQL server where the user can create databases")
+class SqlAsciiDatabaseTests(unittest.TestCase):
+    """CT 140's database was created under the C locale (encoding SQL_ASCII), where psycopg returns
+    text as bytes unless the connection asks for UTF-8. That replayed 001_initial.sql
+    (DuplicateTable) and broke ZoneInfo(time_zone) with "Can't mix strings and bytes"."""
+
+    def setUp(self):
+        import os
+        import uuid
+        self.name = f"golf_ascii_{uuid.uuid4().hex[:10]}"
+        with golf_support._admin() as conn:
+            conn.execute(f"CREATE DATABASE \"{self.name}\" ENCODING 'SQL_ASCII' LC_COLLATE 'C' LC_CTYPE 'C' TEMPLATE template0")
+        self.dsn = golf_support._dsn_for(self.name)
+        self._env = {key: os.environ.get(key) for key in ("GOLF_DATABASE_URL", "GOLF_ALLOWED_ORIGINS")}
+        os.environ.update(GOLF_DATABASE_URL=self.dsn, GOLF_ALLOWED_ORIGINS=golf_support.ORIGIN)
+
+    def tearDown(self):
+        import os
+        for key, value in self._env.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+        with golf_support._admin() as conn:
+            conn.execute(f'DROP DATABASE IF EXISTS "{self.name}" WITH (FORCE)')
+
+    def sql(self, query, params=()):
+        import psycopg
+        with psycopg.connect(self.dsn, autocommit=True, client_encoding="UTF8") as conn:
+            cur = conn.execute(query, params)
+            return cur.fetchall() if cur.description else None
+
+    def test_migrations_run_once_and_the_api_reads_text(self):
+        import migrate
+        self.assertEqual(migrate.migrate(self.dsn, quiet=True), ["001_initial.sql"])
+        self.assertEqual(migrate.migrate(self.dsn, quiet=True), [])
+
+        info = Client().ok("GET", "/app")
+        self.assertEqual(info["course"]["time_zone"], "America/Los_Angeles")
+        player = Client()
+        player.ok("POST", "/auth/register", {"email": "jose@example.com", "password": "correct horse battery",
+                                              "full_name": "José Núñez"})
+        self.assertEqual(player.ok("GET", "/me")["player"]["full_name"], "José Núñez")
+
+    def test_an_unrecorded_initial_schema_is_recorded_not_replayed(self):
+        import migrate
+        migrate.migrate(self.dsn, quiet=True)
+        self.sql("DELETE FROM golf_schema_migrations")
+        self.assertEqual(migrate.migrate(self.dsn, quiet=True), [])
+        self.assertEqual(self.sql("SELECT filename FROM golf_schema_migrations"), [("001_initial.sql",)])
+
+    def test_a_partial_schema_stops_with_a_clear_error(self):
+        import migrate
+        migrate.migrate(self.dsn, quiet=True)
+        self.sql("DELETE FROM golf_schema_migrations")
+        self.sql("DROP TABLE golf_ledger")
+        with self.assertRaisesRegex(RuntimeError, "missing golf_ledger"):
+            migrate.migrate(self.dsn, quiet=True)
 
 if __name__ == "__main__":
     unittest.main()
