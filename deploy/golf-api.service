@@ -1,0 +1,22 @@
+[Unit]
+Description=Golf tee sheet API (loopback only; nginx relays /api/golf/)
+Wants=network-online.target
+After=network-online.target postgresql.service
+
+[Service]
+Type=simple
+User=brettsbox-golf
+Group=brettsbox-golf
+WorkingDirectory=/srv/brettsbox/golf/api
+EnvironmentFile=/etc/brettsbox/golf.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/brettsbox-golf/venv/bin/gunicorn --bind 127.0.0.1:8787 --workers 3 --threads 2 --timeout 30 --graceful-timeout 10 app:application
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+# More sandboxing (ProtectSystem=strict, PrivateTmp=true, ...) works when the container allows
+# nesting; unprivileged LXC containers without it refuse to start such units (status 226/NAMESPACE).
+
+[Install]
+WantedBy=multi-user.target

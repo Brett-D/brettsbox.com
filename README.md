@@ -121,3 +121,10 @@ cd public && python -m http.server 8000
 ```
 
 Line endings are forced to LF by `.gitattributes`, so building on Windows produces the same files as on Linux.
+
+## Golf tee sheet
+
+[`/golf/`](https://brettsbox.com/golf/) is a separate, hand-written app: an installable tee sheet for a golf course
+(bookings, rental clubs and carts, punch cards and memberships, a player database and staff tools) with a small
+Python API and PostgreSQL behind `/api/golf/`. `site/build.py` never touches `public/golf/`. Architecture, rules,
+deployment, backups and development are in [`golf/README.md`](golf/README.md).

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f8f4" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0c120f" media="(prefers-color-scheme: dark)">
+  <meta name="color-scheme" content="light dark">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Tee Sheet">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="description" content="Book tee times, rental clubs and pull carts, and check passes.">
+  <meta name="robots" content="noindex">
+  <title>Tee Sheet</title>
+  <link rel="manifest" href="/golf/manifest.webmanifest">
+  <link rel="icon" href="/golf/icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="/golf/icons/icon-192.png" sizes="192x192" type="image/png">
+  <link rel="apple-touch-icon" href="/golf/icons/apple-touch-icon.png">
+  <script src="/golf/theme.js"></script>
+  <link rel="stylesheet" href="/golf/style.css">
+  <script src="/golf/app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="topbar">
+    <div class="brand">
+      <img src="/golf/icons/icon-192.png" alt="" width="40" height="40">
+      <div>
+        <strong id="course-name">Tee Sheet</strong>
+        <small id="today-label"></small>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-icon" id="theme-button" type="button" data-action="theme" aria-label="Change theme"></button>
+      <button class="btn" id="account-button" type="button" data-action="account">Sign in</button>
+    </div>
+  </header>
+  <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+  <div class="banner" id="offline" role="status" hidden>You're offline. Reconnect to see the latest tee sheet.</div>
+  <main id="main" tabindex="-1">
+    <p class="loading">Loading the tee sheet…</p>
+  </main>
+  <dialog class="sheet" id="sheet" aria-labelledby="sheet-title">
+    <form id="sheet-form" method="dialog" novalidate></form>
+  </dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <noscript><p class="banner">The tee sheet needs JavaScript turned on.</p></noscript>
+</body>
+</html>

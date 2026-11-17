@@ -1,0 +1,9 @@
+[Unit]
+Description=Back up the golf tee sheet database
+After=postgresql.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/brettsbox/golf.env
+ExecStart=/usr/local/bin/brettsbox-golf-backup
+Nice=10

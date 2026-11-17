@@ -17,3 +17,6 @@ systemctl reload nginx
 systemctl daemon-reload
 systemctl enable --now brettsbox-pull.timer
 echo "brettsbox.com setup done. Updates are pulled every 2 minutes."
+
+# The golf tee sheet (https://brettsbox.com/golf/) and its API. A failure here leaves the site running.
+bash /srv/brettsbox/deploy/golf-setup.sh || echo "Golf setup did not finish; see golf/README.md." >&2
