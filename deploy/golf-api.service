@@ -7,7 +7,7 @@ After=network-online.target postgresql.service
 Type=simple
 User=brettsbox-golf
 Group=brettsbox-golf
-WorkingDirectory=/srv/brettsbox/golf/api
+WorkingDirectory=/opt/brettsbox-golf/api
 EnvironmentFile=/etc/brettsbox/golf.env
 Environment=PYTHONDONTWRITEBYTECODE=1
 ExecStart=/opt/brettsbox-golf/venv/bin/gunicorn --bind 127.0.0.1:8787 --workers 3 --threads 2 --timeout 30 --graceful-timeout 10 app:application

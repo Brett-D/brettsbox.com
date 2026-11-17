@@ -32,7 +32,7 @@ flowchart LR
 | `golf/api/migrations/` | SQL migrations, applied in order by `migrate.py` |
 | `golf/api/devserver.py` | Local preview of app and API on one origin |
 | `golf/make_icons.py` | Redraws `public/golf/icons/` (needs Pillow) |
-| `deploy/golf-*.{sh,service,timer}` | Server setup, the API service and nightly backups |
+| `deploy/golf-*.{sh,service,timer}`, `nginx-apply.sh` | Server setup, deploys, diagnostics (`golf-doctor.sh`), the API service and nightly backups |
 | `tests/test_golf_*.py` | Unit, PWA and PostgreSQL integration tests |
 
 `site/build.py` leaves `public/golf/` alone, so rebuilding the blog never touches the app.
@@ -100,34 +100,50 @@ demote anyone on the server:
 
 ```bash
 set -a; . /etc/brettsbox/golf.env; set +a
-/opt/brettsbox-golf/venv/bin/python /srv/brettsbox/golf/api/manage_staff.py promote someone@example.com
+/opt/brettsbox-golf/venv/bin/python /opt/brettsbox-golf/api/manage_staff.py promote someone@example.com
 ```
 
 ## Deploying
 
-On the web container (CT 140), as root:
+On the web container (CT 140), as root. Update the checkout first, so bash runs the current `setup.sh`:
 
 ```bash
+git -C /srv/brettsbox fetch -q --depth 1 origin main && git -C /srv/brettsbox reset -q --hard origin/main
 GOLF_BOOTSTRAP_STAFF_EMAIL=you@example.com bash /srv/brettsbox/deploy/setup.sh
 ```
 
-`setup.sh` sets up the static site as before, then runs `deploy/golf-setup.sh`, which:
+`setup.sh` sets up the static site as before, applies the nginx config (`deploy/nginx-apply.sh`), then runs
+`deploy/golf-setup.sh`, which:
 
-1. installs PostgreSQL, creates the `brettsbox_golf` database and a login role with a random password, and writes
-   `/etc/brettsbox/golf.env` (owner `root:brettsbox-golf`, mode 640; never in Git). To use a PostgreSQL server
-   elsewhere, write that file with your own `GOLF_DATABASE_URL` first and the local install is skipped;
+1. installs PostgreSQL, creates the `brettsbox_golf` database (UTF-8) and a login role with a random password, and
+   writes `/etc/brettsbox/golf.env` (owner `root:brettsbox-golf`, mode 640; never in Git). To use a PostgreSQL
+   server elsewhere, write that file with your own `GOLF_DATABASE_URL` first and the local install is skipped;
 2. creates the `brettsbox-golf` system user and a virtualenv in `/opt/brettsbox-golf/venv`;
-3. applies migrations, installs `golf-api.service` (gunicorn on 127.0.0.1:8787 as `brettsbox-golf`) and
-   `golf-backup.timer`, and waits for the API to answer.
+3. runs `deploy/golf-deploy.sh`: copies `golf/api` to `/opt/brettsbox-golf/api` (so the service never needs access
+   to `/srv` and git updates never change files under running workers), installs requirements, applies
+   migrations, installs `golf-api.service` (gunicorn on 127.0.0.1:8787 as `brettsbox-golf`) and
+   `golf-backup.timer`, restarts the API and waits for it to answer;
+4. applies the nginx config again and checks `/api/golf/app` through nginx.
 
-It is safe to re-run. nginx relays `/api/golf/*` to the API (with a sign-in rate limit per visitor) and serves
-`/golf/` with `Cache-Control: no-cache` and a strict Content-Security-Policy.
+It only reports success when the API answers both directly and through nginx; otherwise it prints diagnostics and
+`setup.sh` fails. It is safe to re-run. nginx relays `/api/golf/*` to the API (with a sign-in rate limit per
+visitor) and serves `/golf/` with `Cache-Control: no-cache` and a strict Content-Security-Policy.
+
+`nginx-apply.sh` restarts nginx instead of reloading it while nginx still listens beyond loopback: a reload can't
+move nginx from the original `listen 80` to the loopback-only listeners (it can't bind `127.0.0.1:80` while holding
+`0.0.0.0:80`), and nginx then silently keeps its old config even though `systemctl reload` reports success.
 
 After that, pushing to `main` is still all it takes: the pull timer updates the files, and whenever `golf/api/`
-differs from the last version that deployed successfully it installs new requirements, applies migrations and
-restarts the API (a failed attempt is retried on the next run). If a push changes the nginx
-config or the systemd units, re-run `setup.sh`.
+differs from the last version that deployed successfully it runs `golf-deploy.sh` (a failed attempt is retried on
+the next run). If a push changes the nginx config, re-run `setup.sh`.
 
+If something isn't working, run the read-only diagnostics. They check the service, its log, the API directly,
+through this container's nginx and on the public site, the nginx config in use, and the Cloudflare tunnel, and end
+with a verdict:
+
+```bash
+bash /srv/brettsbox/deploy/golf-doctor.sh
+```
 `/etc/brettsbox/golf.env` settings:
 
 | Variable | Meaning |
